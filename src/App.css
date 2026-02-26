@@ -1,38 +1,78 @@
-.App {
-  text-align: center;
-}
+/* ... Tus variables y estilos base aquí ... */
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.dashboard-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.card {
+  background-color: #1a1d24; /* Un tono intermedio */
+  border: 1px solid var(--color-text-muted);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.search-container {
+  display: flex;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  align-items: center;
+  height: 100%;
+  gap: 10px;
 }
 
-.App-link {
-  color: #61dafb;
+.search-input {
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-accent-blue);
+  color: var(--color-text-primary);
+  padding: 8px 15px;
+  border-radius: 4px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.btn-primary {
+  background: var(--color-accent-blue);
+  color: var(--color-bg-dark);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.game-list {
+  list-style: none;
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.game-item {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.game-item:hover {
+  background: #242832;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-areas: 
+      "header"
+      "content"
+      "footer";
+    grid-template-columns: 1fr;
   }
-  to {
-    transform: rotate(360deg);
-  }
+  .left-col, .right-col { display: none; }
 }
