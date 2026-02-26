@@ -1,0 +1,72 @@
+{
+  "header": {
+    "analyzePlayer": "Analizar Jugador",
+    "playerPlaceholder": "FedeCandiolo",
+    "currentElo": "ELO ACTUAL",
+    "games": "PARTIDAS"
+  },
+  "filters": {
+    "title": "Filtros",
+    "clear": "Limpiar ↺",
+    "years": "Años",
+    "timeClass": "Ritmos",
+    "pieces": "Piezas",
+    "both": "Ambas",
+    "white": "Blancas",
+    "black": "Negras",
+    "ecoFamily": "Familia ECO",
+    "all": "Todas",
+    "result": "Resultado",
+    "allResults": "Todos",
+    "wins": "Victorias",
+    "losses": "Derrotas",
+    "draws": "Tablas"
+  },
+  "charts": {
+    "resultDistribution": "Distribución de Resultados",
+    "winRate": "Tasa de Victorias",
+    "openingSuccess": "Éxito por Apertura",
+    "eloEvolution": "Evolución de ELO",
+    "accuracyDist": "Distribución de Precisión",
+    "colorPerformance": "Rendimiento por Color",
+    "monthlyTrend": "Tendencia Mensual",
+    "winRateLabel": "% Victorias",
+    "gamesLabel": "Partidas",
+    "noAccuracyData": "No hay datos de precisión para las partidas seleccionadas.",
+    "generalVariation": "Variante General"
+  },
+  "gameHistory": {
+    "title": "Partidas",
+    "moves": "mov.",
+    "view": "VER ↗",
+    "filters": "Filtros",
+    "history": "Historial"
+  },
+  "results": {
+    "victoria": "Victoria",
+    "derrota": "Derrota",
+    "tablas": "Tablas",
+    "wins": "Victorias",
+    "losses": "Derrotas",
+    "drawsLabel": "Tablas"
+  },
+  "ecoFamilies": {
+    "Flanco": "Flanco",
+    "Semi-Abierta": "Semi-Abierta",
+    "Abierta": "Abierta",
+    "Cerradas": "Cerradas",
+    "India": "India",
+    "Otros": "Otros"
+  },
+  "timeClasses": {
+    "blitz": "Blitz",
+    "rapid": "Rápido",
+    "bullet": "Bullet"
+  },
+  "colorLabels": {
+    "white": "Blancas",
+    "black": "Negras"
+  },
+  "loading": "Cargando partidas...",
+  "error": "Error al cargar los datos. Verificá el nombre de usuario e intentá de nuevo."
+}

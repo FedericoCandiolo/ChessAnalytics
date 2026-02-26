@@ -1,0 +1,72 @@
+{
+  "header": {
+    "analyzePlayer": "Analyze Player",
+    "playerPlaceholder": "FedeCandiolo",
+    "currentElo": "CURRENT ELO",
+    "games": "GAMES"
+  },
+  "filters": {
+    "title": "Filters",
+    "clear": "Clear ↺",
+    "years": "Years",
+    "timeClass": "Time Controls",
+    "pieces": "Color",
+    "both": "Both",
+    "white": "White",
+    "black": "Black",
+    "ecoFamily": "ECO Family",
+    "all": "All",
+    "result": "Result",
+    "allResults": "All",
+    "wins": "Wins",
+    "losses": "Losses",
+    "draws": "Draws"
+  },
+  "charts": {
+    "resultDistribution": "Result Distribution",
+    "winRate": "Win Rate",
+    "openingSuccess": "Opening Performance",
+    "eloEvolution": "ELO Evolution",
+    "accuracyDist": "Accuracy Distribution",
+    "colorPerformance": "Performance by Color",
+    "monthlyTrend": "Monthly Trend",
+    "winRateLabel": "Win %",
+    "gamesLabel": "Games",
+    "noAccuracyData": "No accuracy data available for the selected games.",
+    "generalVariation": "General Variation"
+  },
+  "gameHistory": {
+    "title": "Games",
+    "moves": "moves",
+    "view": "VIEW ↗",
+    "filters": "Filters",
+    "history": "History"
+  },
+  "results": {
+    "victoria": "Win",
+    "derrota": "Loss",
+    "tablas": "Draw",
+    "wins": "Wins",
+    "losses": "Losses",
+    "drawsLabel": "Draws"
+  },
+  "ecoFamilies": {
+    "Flanco": "Flank",
+    "Semi-Abierta": "Semi-Open",
+    "Abierta": "Open",
+    "Cerradas": "Closed",
+    "India": "Indian",
+    "Otros": "Others"
+  },
+  "timeClasses": {
+    "blitz": "Blitz",
+    "rapid": "Rapid",
+    "bullet": "Bullet"
+  },
+  "colorLabels": {
+    "white": "White",
+    "black": "Black"
+  },
+  "loading": "Loading games...",
+  "error": "Failed to load data. Check the username and try again."
+}
