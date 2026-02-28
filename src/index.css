@@ -124,15 +124,12 @@ h3 { margin-top: 0; }
   flex: 1;
   display: flex;
   min-height: 0;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chart-slide {
-  min-width: 100%;
-  width: 100%;
+  flex: 1;
   height: 100%;
   min-height: 0;
-  display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0 0.25rem;
@@ -491,32 +488,46 @@ input[type="date"].filter-select::-webkit-calendar-picker-indicator {
 }
 .slide-col-2 > * { flex: 1; min-height: 0; }
 
+/* 2-column: left stack (2 charts) + right full-height */
+.slide-2col-lr {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+}
+.slide-left-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+.slide-left-stack > * { flex: 1; min-height: 0; }
+
 /* chart-slide layout containers fill available space */
 .chart-slide > .slide-desktop-4,
 .chart-slide > .slide-desktop-3,
-.chart-slide > .slide-col-2 {
+.chart-slide > .slide-col-2,
+.chart-slide > .slide-2col-lr {
   flex: 1;
   min-height: 0;
   height: auto;
 }
 
-/* ─── Maximize overlay ───────────────────────────── */
+/* ─── Maximize overlay (backdrop only) ──────────── */
 .chart-max-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 9998;
   background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  cursor: pointer;
 }
 
+/* Maximized card: uses position:fixed, no portal needed */
 .chart-card--max {
-  width: 100%;
-  height: 100%;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
+  position: fixed !important;
+  inset: 1rem;
+  z-index: 9999;
   overflow: hidden;
 }
 

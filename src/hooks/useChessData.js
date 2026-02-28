@@ -138,8 +138,8 @@ export function useChessData() {
       if (excludeKey !== 'rated'       && filters.rated.length > 0       && !filters.rated.includes(g.rated)) return false;
       if (filters.family !== 'all'     && g.family !== filters.family) return false;
       if (filters.opening !== 'all'    && g.openingFull !== filters.opening) return false;
-      if (filters.dateFrom && g.timestamp * 1000 < new Date(filters.dateFrom).getTime()) return false;
-      if (filters.dateTo   && g.timestamp * 1000 > new Date(filters.dateTo).getTime() + 86400000) return false;
+      if (filters.dateFrom) { const [fy,fm,fd] = filters.dateFrom.split('-').map(Number); if (g.timestamp*1000 < new Date(fy,fm-1,fd).getTime()) return false; }
+      if (filters.dateTo)   { const [ty,tm,td] = filters.dateTo.split('-').map(Number);   if (g.timestamp*1000 >= new Date(ty,tm-1,td+1).getTime()) return false; }
       return true;
     });
     return new Set(other.map(valueGetter));
@@ -172,8 +172,8 @@ export function useChessData() {
       if (filters.rules.length > 0       && !filters.rules.includes(g.rules)) return false;
       if (filters.months.length > 0      && !filters.months.includes(g.monthNum)) return false;
       if (filters.rated.length > 0       && !filters.rated.includes(g.rated)) return false;
-      if (filters.dateFrom && g.timestamp * 1000 < new Date(filters.dateFrom).getTime()) return false;
-      if (filters.dateTo   && g.timestamp * 1000 > new Date(filters.dateTo).getTime() + 86400000) return false;
+      if (filters.dateFrom) { const [fy,fm,fd] = filters.dateFrom.split('-').map(Number); if (g.timestamp*1000 < new Date(fy,fm-1,fd).getTime()) return false; }
+      if (filters.dateTo)   { const [ty,tm,td] = filters.dateTo.split('-').map(Number);   if (g.timestamp*1000 >= new Date(ty,tm-1,td+1).getTime()) return false; }
       return true;
     });
 

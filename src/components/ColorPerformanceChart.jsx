@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { RESULT_COLORS } from '../constants';
@@ -89,25 +89,18 @@ export default function ColorPerformanceChart({ data }) {
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
   }, [data, t]);
 
-  const card = (
-    <div className={`chart-card${maximized ? ' chart-card--max' : ''}`}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexShrink: 0 }}>
-        <h4 style={{ margin: 0, fontSize: '0.875rem' }}>{t('charts.colorPerformance')}</h4>
-        <button className="chart-max-btn" style={{ opacity: 1 }} onClick={() => setMaximized(m => !m)}>
-          {maximized ? <X size={14} /> : <Maximize2 size={14} />}
-        </button>
+  return (
+    <>
+      {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
+      <div className={`chart-card${maximized ? ' chart-card--max' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexShrink: 0 }}>
+          <h4 style={{ margin: 0, fontSize: '0.875rem' }}>{t('charts.colorPerformance')}</h4>
+          <button className="chart-max-btn" style={{ opacity: 1 }} onClick={() => setMaximized(m => !m)}>
+            {maximized ? <X size={14} /> : <Maximize2 size={14} />}
+          </button>
+        </div>
+        <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
       </div>
-      <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
-    </div>
+    </>
   );
-
-  if (maximized) {
-    return createPortal(
-      <div className="chart-max-overlay" onClick={e => { if (e.target === e.currentTarget) setMaximized(false); }}>
-        {card}
-      </div>,
-      document.body
-    );
-  }
-  return card;
 }

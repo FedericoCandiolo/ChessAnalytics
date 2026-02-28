@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, X } from 'lucide-react';
@@ -48,8 +48,9 @@ export default function ResultsPieChart({ data, winRate }) {
           : t('results.drawsLabel')
       }));
 
-      g.selectAll('path').data(pie(translatedData)).join('path')
-        .attr('d', arc).attr('fill', d => d.data.color).style('cursor', 'pointer')
+      const paths = g.selectAll('path').data(pie(translatedData)).join('path')
+        .attr('fill', d => d.data.color).style('cursor', 'pointer')
+        .attr('d', d => arc({ ...d, endAngle: d.startAngle }))
         .on('mouseover', function (event, d) {
           d3.select(this).transition().duration(150).attr('d', arcH);
           const pct = total > 0 ? Math.round(d.data.value / total * 100) : 0;
@@ -58,6 +59,11 @@ export default function ResultsPieChart({ data, winRate }) {
         })
         .on('mousemove', (event) => tt.style('left', `${event.clientX + 12}px`).style('top', `${event.clientY - 8}px`))
         .on('mouseout', function () { d3.select(this).transition().duration(150).attr('d', arc); tt.style('opacity', '0'); });
+      paths.transition().duration(750).ease(d3.easeCubicOut)
+        .attrTween('d', d => {
+          const interp = d3.interpolate({ ...d, endAngle: d.startAngle }, d);
+          return t2 => arc(interp(t2));
+        });
 
       // Center text
       g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
@@ -85,25 +91,18 @@ export default function ResultsPieChart({ data, winRate }) {
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
   }, [data, winRate, t]);
 
-  const card = (
-    <div className={`chart-card${maximized ? ' chart-card--max' : ''}`}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexShrink: 0 }}>
-        <h4 style={{ margin: 0, fontSize: '0.875rem' }}>{t('charts.resultDistribution')}</h4>
-        <button className="chart-max-btn" style={{ opacity: 1 }} onClick={() => setMaximized(m => !m)}>
-          {maximized ? <X size={14} /> : <Maximize2 size={14} />}
-        </button>
+  return (
+    <>
+      {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
+      <div className={`chart-card${maximized ? ' chart-card--max' : ''}`}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexShrink: 0 }}>
+          <h4 style={{ margin: 0, fontSize: '0.875rem' }}>{t('charts.resultDistribution')}</h4>
+          <button className="chart-max-btn" style={{ opacity: 1 }} onClick={() => setMaximized(m => !m)}>
+            {maximized ? <X size={14} /> : <Maximize2 size={14} />}
+          </button>
+        </div>
+        <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
       </div>
-      <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
-    </div>
+    </>
   );
-
-  if (maximized) {
-    return createPortal(
-      <div className="chart-max-overlay" onClick={e => { if (e.target === e.currentTarget) setMaximized(false); }}>
-        {card}
-      </div>,
-      document.body
-    );
-  }
-  return card;
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, X } from 'lucide-react';
@@ -255,76 +255,58 @@ export default function CalendarChart({ data }) {
 
   const isEmpty = !data || data.length === 0;
 
-  // Compute min-height so the chart always shows (at least 1 year)
-  const years = data
-    ? Array.from(new Set(data.map(d => d.date.slice(0, 4)))).length
-    : 1;
-  const minH = Math.max(1, years) * (MARGIN_TOP + 7 * STEP + YEAR_PADDING) + 24;
-
-  const card = (
-    <div
-      className={`chart-card${maximized ? ' chart-card--max' : ''}`}
-      style={{ display: 'flex', flexDirection: 'column' }}
-    >
+  return (
+    <>
+      {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.5rem',
-          flexShrink: 0,
-        }}
+        className={`chart-card${maximized ? ' chart-card--max' : ''}`}
+        style={{ display: 'flex', flexDirection: 'column' }}
       >
-        <h4 style={{ margin: 0, fontSize: '0.875rem' }}>
-          {t('charts.calendarTitle')}
-        </h4>
-        <button
-          className="chart-max-btn"
-          style={{ opacity: 1 }}
-          onClick={() => setMaximized(m => !m)}
-        >
-          {maximized ? <X size={14} /> : <Maximize2 size={14} />}
-        </button>
-      </div>
-
-      {isEmpty ? (
         <div
           style={{
-            flex: 1,
             display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: '#64748b',
-            fontSize: '0.875rem',
+            marginBottom: '0.5rem',
+            flexShrink: 0,
           }}
         >
-          {t('charts.calendarNoData')}
+          <h4 style={{ margin: 0, fontSize: '0.875rem' }}>
+            {t('charts.calendarTitle')}
+          </h4>
+          <button
+            className="chart-max-btn"
+            style={{ opacity: 1 }}
+            onClick={() => setMaximized(m => !m)}
+          >
+            {maximized ? <X size={14} /> : <Maximize2 size={14} />}
+          </button>
         </div>
-      ) : (
-        <div
-          ref={containerRef}
-          style={{
-            flex: 1,
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            minHeight: minH,
-          }}
-        />
-      )}
-    </div>
+        {isEmpty ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#64748b',
+              fontSize: '0.875rem',
+            }}
+          >
+            {t('charts.calendarNoData')}
+          </div>
+        ) : (
+          <div
+            ref={containerRef}
+            style={{
+              flex: 1,
+              overflowX: 'auto',
+              overflowY: 'auto',
+              minHeight: 0,
+            }}
+          />
+        )}
+      </div>
+    </>
   );
-
-  if (maximized) {
-    return createPortal(
-      <div
-        className="chart-max-overlay"
-        onClick={e => { if (e.target === e.currentTarget) setMaximized(false); }}
-      >
-        {card}
-      </div>,
-      document.body
-    );
-  }
-
-  return card;
 }

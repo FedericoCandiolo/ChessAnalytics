@@ -29,9 +29,9 @@ export default function ChartSlider({ slides }) {
   return (
     <div className="chart-slider" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Track */}
-      <div className="chart-slider-track" style={{ transform: `translateX(-${current * 100}%)` }}>
+      <div className="chart-slider-track">
         {slides.map((slide, i) => (
-          <div key={i} className="chart-slide">
+          <div key={i} className="chart-slide" style={{ display: i === current ? 'flex' : 'none' }}>
             {slide.node}
           </div>
         ))}

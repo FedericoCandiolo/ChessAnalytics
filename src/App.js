@@ -15,10 +15,8 @@ import EloLineChart from './components/EloLineChart';
 import AccuracyChart from './components/AccuracyChart';
 import ColorPerformanceChart from './components/ColorPerformanceChart';
 import MonthlyTrendChart from './components/MonthlyTrendChart';
-import AccuracyVsEloScatter from './components/AccuracyVsEloScatter';
 import OpeningBubblesChart from './components/OpeningBubblesChart';
 import CalendarChart from './components/CalendarChart';
-import RadialWeekdayChart from './components/RadialWeekdayChart';
 
 function App() {
   const { t } = useTranslation();
@@ -63,40 +61,41 @@ function App() {
   const accChart      = <AccuracyChart data={stats.accuracyBuckets} />;
   const colorChart    = <ColorPerformanceChart data={stats.colorStats} />;
   const monthlyChart  = <MonthlyTrendChart data={stats.monthlyTrend} />;
-  const scatterChart  = <AccuracyVsEloScatter data={stats.accuracyVsElo} />;
   const bubblesChart  = <OpeningBubblesChart data={stats.openingBubbles} />;
   const calendarChart = <CalendarChart data={stats.calendarData} />;
-  const radialChart   = <RadialWeekdayChart data={stats.weekdayData} />;
 
-  // ── Desktop slides (width ≥ 1100): 3 or 4 charts per slide ──────────────
+  // ── Desktop slides (width ≥ 1100): 2+1 grid per slide ───────────────────
   const desktopSlides = [
     {
+      // Slide 1: Pie + Openings top row, ELO full bottom
       label: `${t('slides.results')} + ${t('slides.elo')}`,
       node: (
-        <div className="slide-desktop-4">
+        <div className="slide-desktop-3">
           {pieChart}
           {openingsChart}
           {eloChart}
+        </div>
+      )
+    },
+    {
+      // Slide 2: Accuracy + Color stacked left, Bubbles full right
+      label: `${t('slides.accuracy')} + ${t('slides.bubbles')}`,
+      node: (
+        <div className="slide-2col-lr">
+          <div className="slide-left-stack">
+            {accChart}
+            {colorChart}
+          </div>
           {bubblesChart}
         </div>
       )
     },
     {
-      label: `${t('slides.accuracy')} + ${t('slides.scatter')}`,
-      node: (
-        <div className="slide-desktop-3">
-          {accChart}
-          {colorChart}
-          {scatterChart}
-        </div>
-      )
-    },
-    {
+      // Slide 3: Calendar full top, Monthly full bottom
       label: `${t('slides.calendar')} + ${t('slides.monthly')}`,
       node: (
-        <div className="slide-desktop-3">
+        <div className="slide-col-2">
           {calendarChart}
-          {radialChart}
           {monthlyChart}
         </div>
       )
@@ -108,8 +107,7 @@ function App() {
     { label: t('slides.results'),  node: <div className="slide-col-2">{pieChart}{openingsChart}</div> },
     { label: t('slides.elo'),      node: <div className="slide-col-2">{eloChart}{bubblesChart}</div> },
     { label: t('slides.accuracy'), node: <div className="slide-col-2">{accChart}{colorChart}</div> },
-    { label: t('slides.scatter'),  node: <div className="slide-col-2">{scatterChart}{calendarChart}</div> },
-    { label: t('slides.radial'),   node: <div className="slide-col-2">{radialChart}{monthlyChart}</div> }
+    { label: t('slides.calendar'), node: <div className="slide-col-2">{calendarChart}{monthlyChart}</div> }
   ];
 
   // ── Mobile landscape slides: 1 chart per slide ──────────────────────────
@@ -120,9 +118,7 @@ function App() {
     { label: t('slides.bubbles'),          node: bubblesChart },
     { label: t('slides.accuracy'),         node: accChart },
     { label: t('charts.colorPerformance'), node: colorChart },
-    { label: t('slides.scatter'),          node: scatterChart },
     { label: t('slides.calendar'),         node: calendarChart },
-    { label: t('slides.radial'),           node: radialChart },
     { label: t('slides.monthly'),          node: monthlyChart }
   ];
 
