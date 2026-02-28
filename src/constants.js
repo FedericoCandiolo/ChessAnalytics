@@ -26,24 +26,40 @@ export const ECO_FAMILIES = {
 };
 
 export const INITIAL_FILTERS = {
+  rules: [],
   timeClasses: [],
-  years: [],
-  color: 'all',
-  result: 'all',
+  rated: [],           // multi-select: 1 (rated) or 0 (unrated)
+  results: [],         // multi-select: 'victoria', 'tablas', 'derrota'
+  colors: [],          // multi-select: 'white', 'black'
   family: 'all',
-  opening: 'all'
+  opening: 'all',
+  years: [],
+  months: [],
+  dateFrom: '',
+  dateTo: ''
 };
 
-export const RITMOS = ["blitz", "rapid", "bullet"];
+export const RITMOS = ["bullet", "blitz", "rapid", "daily"];
 
 export const ELO_COLORS = {
-  blitz: '#f59e0b',
-  rapid: '#10b981',
-  bullet: '#ef4444'
+  blitz:  '#f59e0b',
+  rapid:  '#10b981',
+  bullet: '#ef4444',
+  daily:  '#a855f7'
 };
 
 export const RESULT_COLORS = {
-  win: '#00FF9C',
+  win:  '#00FF9C',
   draw: '#FFF301',
   loss: '#FF0101'
+};
+
+// Family colors for bubble chart
+export const FAMILY_COLORS = {
+  'Flanco':      '#60a5fa',
+  'Semi-Abierta':'#f59e0b',
+  'Abierta':     '#10b981',
+  'Cerradas':    '#a855f7',
+  'India':       '#ef4444',
+  'Otros':       '#94a3b8'
 };

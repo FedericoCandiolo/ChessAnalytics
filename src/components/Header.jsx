@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
+import { ELO_COLORS } from '../constants';
 
 function LangSwitcher() {
   const lang = i18n.language;
@@ -13,39 +14,50 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, onUsernameSubmit }) {
+export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode }) {
   const { t } = useTranslation();
+  const modeColor = ELO_COLORS[mainTimeClass] || '#01B6FF';
+  const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
+  const modeMaxElo = mainTimeClass ? (maxEloByMode?.[mainTimeClass] ?? '---') : '---';
 
   return (
     <header className="header">
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <img
-          src="/logo.png"
-          alt="ChessAnalytics Logo"
-          style={{ height: '2.8rem', width: 'auto', borderRadius: '0.25rem' }}
-        />
+        <img src="/logo.png" alt="ChessAnalytics Logo"
+          style={{ height: '2.5rem', width: 'auto', borderRadius: '0.25rem' }} />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <div className="kpi-box" style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.625rem', opacity: 0.7, display: 'block', letterSpacing: '0.05em' }}>{t('header.currentElo')}</span>
-          <div style={{ color: '#00FF9C', fontWeight: 'bold', fontSize: '1.125rem' }}>{currentElo}</div>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        {/* Main mode block */}
+        {mainTimeClass && (
+          <div className="kpi-box" style={{ textAlign: 'center', borderRight: `2px solid ${modeColor}`, paddingRight: '0.6rem' }}>
+            <span style={{ fontSize: '0.55rem', opacity: 0.7, display: 'block', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              {t(`timeClasses.${mainTimeClass}`, mainTimeClass)}
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '0.5rem', color: '#94a3b8', display: 'block' }}>{t('header.currentElo')}</span>
+                <span style={{ color: modeColor, fontWeight: 'bold', fontSize: '1rem' }}>{modeCurrentElo}</span>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontSize: '0.5rem', color: '#94a3b8', display: 'block' }}>{t('header.maxElo')}</span>
+                <span style={{ color: modeColor, fontWeight: '600', fontSize: '0.85rem', opacity: 0.8 }}>{modeMaxElo}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="kpi-box" style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '0.625rem', opacity: 0.7, display: 'block', letterSpacing: '0.05em' }}>{t('header.games')}</span>
-          <div style={{ fontWeight: 'bold', fontSize: '1.125rem', color: '#fff' }}>{gamesCount}</div>
+          <span style={{ fontSize: '0.55rem', opacity: 0.7, display: 'block', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('header.games')}</span>
+          <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff' }}>{gamesCount}</div>
         </div>
 
-        <div style={{ borderLeft: '1px solid #334155', paddingLeft: '0.75rem' }}>
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>
+        <div style={{ borderLeft: '1px solid #334155', paddingLeft: '0.7rem' }}>
+          <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>
             {t('header.analyzePlayer')}:
           </span>
-          <input
-            className="search-input"
-            placeholder={t('header.playerPlaceholder')}
-            onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())}
-          />
+          <input className="search-input" placeholder={t('header.playerPlaceholder')}
+            onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())} />
         </div>
 
         <LangSwitcher />

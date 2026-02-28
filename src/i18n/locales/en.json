@@ -2,25 +2,36 @@
   "header": {
     "analyzePlayer": "Analyze Player",
     "playerPlaceholder": "FedeCandiolo",
-    "currentElo": "CURRENT ELO",
+    "currentElo": "ELO",
+    "maxElo": "MAX",
     "games": "GAMES"
   },
   "filters": {
     "title": "Filters",
     "clear": "Clear ↺",
-    "years": "Years",
+    "year": "Year",
     "timeClass": "Time Controls",
+    "evaluation": "Evaluation",
+    "rated": "Rated",
+    "unrated": "Unrated",
     "pieces": "Color",
     "both": "Both",
     "white": "White",
     "black": "Black",
-    "ecoFamily": "ECO Family",
+    "openingFamily": "Opening Family",
+    "opening": "Opening",
+    "allOpenings": "All openings",
     "all": "All",
     "result": "Result",
     "allResults": "All",
     "wins": "Wins",
     "losses": "Losses",
-    "draws": "Draws"
+    "draws": "Draws",
+    "rules": "Rules",
+    "month": "Month",
+    "dateRange": "Date range",
+    "dateFrom": "From",
+    "dateTo": "To"
   },
   "charts": {
     "resultDistribution": "Result Distribution",
@@ -33,7 +44,50 @@
     "winRateLabel": "Win %",
     "gamesLabel": "Games",
     "noAccuracyData": "No accuracy data available for the selected games.",
-    "generalVariation": "General Variation"
+    "generalVariation": "General Variation",
+    "movingAvgShort": "moving avg",
+    "moves": "moves",
+    "movesXLabel": "Game length (moves)",
+    "moveNumber": "Move number",
+    "move": "Move",
+    "movingAvg": "Moving avg",
+    "avgEval": "Avg eval",
+    "avgTimeRemaining": "Avg time remaining",
+    "timeRemainingPct": "Time remaining (%)",
+    "scatterTitle": "Accuracy vs ELO",
+    "scatterNoData": "No accuracy data available.",
+    "scatterEloAxis": "ELO",
+    "scatterAccAxis": "Accuracy (%)",
+    "scatterTrend": "Trend",
+    "openingBubbles": "Opening & Family Analysis",
+    "openingBubblesNoData": "No opening data available.",
+    "calendarTitle": "Result by Date",
+    "calendarNoData": "No game data available.",
+    "radialTitle": "Result by Day of Week",
+    "radialNoData": "No data available.",
+    "netScore": "Net score",
+    "cumulative": "Cumulative",
+    "paretoIn": "Pareto equilibrium",
+    "paretoOut": "Outside Pareto"
+  },
+  "slides": {
+    "results": "Results",
+    "elo": "ELO",
+    "accuracy": "Accuracy",
+    "monthly": "Trend",
+    "scatter": "Precision",
+    "bubbles": "Openings",
+    "calendar": "Calendar",
+    "radial": "By Day"
+  },
+  "weekdays": {
+    "0": "Mon",
+    "1": "Tue",
+    "2": "Wed",
+    "3": "Thu",
+    "4": "Fri",
+    "5": "Sat",
+    "6": "Sun"
   },
   "gameHistory": {
     "title": "Games",
@@ -61,7 +115,8 @@
   "timeClasses": {
     "blitz": "Blitz",
     "rapid": "Rapid",
-    "bullet": "Bullet"
+    "bullet": "Bullet",
+    "daily": "Daily"
   },
   "colorLabels": {
     "white": "White",
