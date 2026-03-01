@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/ChessAnalytics/static/css/main.2b8a8933.css",
+    "main.js": "/ChessAnalytics/static/js/main.3f1fe3ee.js",
+    "static/js/239.d4b64d64.chunk.js": "/ChessAnalytics/static/js/239.d4b64d64.chunk.js",
+    "static/js/977.e08ce853.chunk.js": "/ChessAnalytics/static/js/977.e08ce853.chunk.js",
+    "static/js/455.148a62c6.chunk.js": "/ChessAnalytics/static/js/455.148a62c6.chunk.js",
+    "static/js/453.35423958.chunk.js": "/ChessAnalytics/static/js/453.35423958.chunk.js",
+    "index.html": "/ChessAnalytics/index.html",
+    "main.2b8a8933.css.map": "/ChessAnalytics/static/css/main.2b8a8933.css.map",
+    "main.3f1fe3ee.js.map": "/ChessAnalytics/static/js/main.3f1fe3ee.js.map",
+    "239.d4b64d64.chunk.js.map": "/ChessAnalytics/static/js/239.d4b64d64.chunk.js.map",
+    "977.e08ce853.chunk.js.map": "/ChessAnalytics/static/js/977.e08ce853.chunk.js.map",
+    "455.148a62c6.chunk.js.map": "/ChessAnalytics/static/js/455.148a62c6.chunk.js.map",
+    "453.35423958.chunk.js.map": "/ChessAnalytics/static/js/453.35423958.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.2b8a8933.css",
+    "static/js/main.3f1fe3ee.js"
+  ]
+}
