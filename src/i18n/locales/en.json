@@ -1,10 +1,12 @@
 {
   "header": {
     "analyzePlayer": "Analyze Player",
-    "playerPlaceholder": "FedeCandiolo",
+    "playerPlaceholder": "FaustinoOro",
     "currentElo": "ELO",
     "maxElo": "MAX",
-    "games": "GAMES"
+    "games": "GAMES",
+    "exportPdf": "Export PDF",
+    "generatingPdf": "Generating..."
   },
   "filters": {
     "title": "Filters",
@@ -91,7 +93,7 @@
   },
   "gameHistory": {
     "title": "Games",
-    "moves": "moves",
+    "opp": "Opp",
     "view": "VIEW ↗",
     "filters": "Filters",
     "history": "History"
@@ -121,6 +123,14 @@
   "colorLabels": {
     "white": "White",
     "black": "Black"
+  },
+  "pdf": {
+    "disclaimer": "Data from Chess.com public API · Not affiliated with Chess.com",
+    "noFilters": "No filters applied — all games shown",
+    "summary": "Summary"
+  },
+  "footer": {
+    "disclaimer": "Uses Chess.com public data · Not affiliated with Chess.com"
   },
   "loading": "Loading games...",
   "error": "Failed to load data. Check the username and try again."

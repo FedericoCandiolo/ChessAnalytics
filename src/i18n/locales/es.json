@@ -1,10 +1,12 @@
 {
   "header": {
     "analyzePlayer": "Analizar Jugador",
-    "playerPlaceholder": "FedeCandiolo",
+    "playerPlaceholder": "FaustinoOro",
     "currentElo": "ELO",
     "maxElo": "MÁX",
-    "games": "PARTIDAS"
+    "games": "PARTIDAS",
+    "exportPdf": "Exportar PDF",
+    "generatingPdf": "Generando..."
   },
   "filters": {
     "title": "Filtros",
@@ -91,7 +93,7 @@
   },
   "gameHistory": {
     "title": "Partidas",
-    "moves": "mov.",
+    "opp": "Rival",
     "view": "VER ↗",
     "filters": "Filtros",
     "history": "Historial"
@@ -121,6 +123,14 @@
   "colorLabels": {
     "white": "Blancas",
     "black": "Negras"
+  },
+  "pdf": {
+    "disclaimer": "Datos de la API pública de Chess.com · No estamos afiliados con Chess.com",
+    "noFilters": "Sin filtros aplicados — se muestran todas las partidas",
+    "summary": "Resumen"
+  },
+  "footer": {
+    "disclaimer": "Usa datos públicos de Chess.com · No estamos afiliados con Chess.com"
   },
   "loading": "Cargando partidas...",
   "error": "Error al cargar los datos. Verificá el nombre de usuario e intentá de nuevo."

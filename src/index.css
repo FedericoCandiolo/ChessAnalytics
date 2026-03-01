@@ -122,14 +122,13 @@ h3 { margin-top: 0; }
 
 .chart-slider-track {
   flex: 1;
-  display: flex;
+  position: relative;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chart-slide {
-  flex: 1;
-  height: 100%;
-  min-height: 0;
+  display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0 0.25rem;
@@ -285,6 +284,33 @@ input[type="date"].filter-select::-webkit-calendar-picker-indicator {
 .lang-btn.active {
   background: var(--color-success);
   color: #000;
+}
+
+.pdf-export-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pdf-export-btn:hover:not(:disabled) {
+  background: var(--color-item-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+.pdf-export-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.pdf-export-progress {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2rem;
+  text-align: center;
 }
 
 /* ─── KPI box ────────────────────────────────────── */

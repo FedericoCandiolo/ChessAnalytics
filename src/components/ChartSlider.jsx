@@ -28,10 +28,19 @@ export default function ChartSlider({ slides }) {
 
   return (
     <div className="chart-slider" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onKeyDown={handleKeyDown} tabIndex={0}>
-      {/* Track */}
+      {/* Track — all slides mounted so D3 always has real dimensions */}
       <div className="chart-slider-track">
         {slides.map((slide, i) => (
-          <div key={i} className="chart-slide" style={{ display: i === current ? 'flex' : 'none' }}>
+          <div
+            key={i}
+            className="chart-slide"
+            style={{
+              position: 'absolute', inset: 0,
+              opacity: i === current ? 1 : 0,
+              pointerEvents: i === current ? 'auto' : 'none',
+              transition: 'opacity 0.2s',
+            }}
+          >
             {slide.node}
           </div>
         ))}

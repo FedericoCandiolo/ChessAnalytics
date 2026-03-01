@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DETAILED_ECO, ECO_FAMILIES, INITIAL_FILTERS, RESULT_COLORS } from '../constants';
+import { ECO_DB, ECO_FAMILIES, INITIAL_FILTERS, RESULT_COLORS } from '../constants';
 
 const DRAW_TYPES = ['agreed', 'repetition', 'stalemate', '50rule', 'insufficient', 'time_vs_insufficient'];
 
@@ -28,7 +28,7 @@ function quantile(arr, q) {
 
 export function useChessData() {
   const { t, i18n } = useTranslation();
-  const [username, setUsername] = useState('fedecandiolo');
+  const [username, setUsername] = useState('faustinooro');
   const [games, setGames] = useState([]);
   const [ecoDb, setEcoDb] = useState({});
   const [loading, setLoading] = useState(false);
@@ -69,9 +69,6 @@ export function useChessData() {
   }, [username]);
 
   const processedAll = useMemo(() => {
-    const lang = i18n.language || 'en';
-    const localEco = DETAILED_ECO[lang] || DETAILED_ECO.en;
-    const dateLocale = lang === 'en' ? 'en-US' : 'es-AR';
     const fallbackName = t('charts.generalVariation');
 
     return games.map(g => {
@@ -81,8 +78,12 @@ export function useChessData() {
       const isoDate = dateObj.toISOString().slice(0, 10);
       const ecoCode = g.pgn?.match(/\[ECO "(.*?)"\]/)?.[1] || "N/A";
       const famKey = ecoCode.charAt(0);
-      const openingName = localEco[ecoCode] || ecoDb[ecoCode] || fallbackName;
+      const openingName = ECO_DB[ecoCode] || ecoDb[ecoCode] || fallbackName;
+      const ecoUrlRaw = g.pgn?.match(/\[ECOUrl "(https:\/\/www\.chess\.com\/openings\/([^"]+))"\]/)?.[2] || null;
+      const openingLine = ecoUrlRaw ? ecoUrlRaw.replace(/-/g, ' ') : null;
       const dayOfWeek = dateObj.getDay(); // 0=Sun
+      const lang = i18n.language || 'en';
+      const dateLocale = lang === 'en' ? 'en-US' : 'es-AR';
 
       return {
         ...g,
@@ -94,7 +95,6 @@ export function useChessData() {
         initialTime: parseTimeControl(g.time_control),
         accuracy: g.accuracies ? Math.round(isWhite ? g.accuracies.white : g.accuracies.black) : null,
         opponent: { name: (isWhite ? g.black : g.white).username, rating: (isWhite ? g.black : g.white).rating },
-        moves: g.pgn?.match(/(\d+)\./g)?.length || 0,
         year: dateObj.getFullYear().toString(),
         month: isoDate.slice(0, 7),
         monthNum: dateObj.getMonth() + 1,
@@ -102,8 +102,10 @@ export function useChessData() {
         isoDate,
         dateObj,
         family: ECO_FAMILIES[famKey] || "Otros",
-        openingFull: `${ecoCode} - ${openingName}`,
+        openingFull: `${ecoCode} – ${openingName}`,
+        openingLine,
         outcome: myData.result === 'win' ? 'victoria' : (DRAW_TYPES.includes(myData.result) ? 'tablas' : 'derrota'),
+        termination: myData.result,
         date: dateObj.toLocaleDateString(dateLocale),
         timestamp: g.end_time
       };
@@ -222,6 +224,7 @@ export function useChessData() {
       if (!monthMap[monthKey]) monthMap[monthKey] = { month: monthKey, victoria: 0, derrota: 0, tablas: 0, total: 0 };
       monthMap[monthKey][g.outcome]++;
       monthMap[monthKey].total++;
+      if (g.time_class) monthMap[monthKey][g.time_class] = (monthMap[monthKey][g.time_class] || 0) + 1;
 
       // Time class counts
       timeClassCounts[g.time_class] = (timeClassCounts[g.time_class] || 0) + 1;
@@ -259,11 +262,18 @@ export function useChessData() {
     const locale = i18n.language === 'en' ? 'en-US' : 'es-AR';
     const monthlyTrend = Object.values(monthMap)
       .sort((a, b) => a.month.localeCompare(b.month))
-      .map(m => ({
-        ...m,
-        label: new Date(m.month + '-01').toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
-        winRate: m.total > 0 ? Math.round((m.victoria / m.total) * 100) : 0
-      }));
+      .map(m => {
+        const [yr, mo] = m.month.split('-').map(Number);
+        return {
+          ...m,
+          label: new Date(yr, mo - 1, 1).toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
+          winRate: m.total > 0 ? Math.round((m.victoria / m.total) * 100) : 0,
+          bullet: m.bullet || 0,
+          blitz:  m.blitz  || 0,
+          rapid:  m.rapid  || 0,
+          daily:  m.daily  || 0,
+        };
+      });
 
     // Accuracy vs ELO scatter
     const accuracyVsElo = data

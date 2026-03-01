@@ -125,7 +125,7 @@ export default function OpeningsBarChart({ data }) {
     };
 
     draw();
-    const ro = new ResizeObserver(draw);
+    const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
   }, [data, t]);

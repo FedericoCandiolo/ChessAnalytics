@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
 import { ELO_COLORS } from '../constants';
+import { FileDown } from 'lucide-react';
 
 function LangSwitcher() {
   const lang = i18n.language;
@@ -14,7 +15,7 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode }) {
+export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress }) {
   const { t } = useTranslation();
   const modeColor = ELO_COLORS[mainTimeClass] || '#01B6FF';
   const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
@@ -61,6 +62,22 @@ export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainT
         </div>
 
         <LangSwitcher />
+
+        {/* PDF Export button */}
+        <button
+          className="pdf-export-btn"
+          onClick={onExportPDF}
+          disabled={pdfLoading}
+          title={pdfLoading ? t('header.generatingPdf') : t('header.exportPdf')}
+        >
+          {pdfLoading ? (
+            <span className="pdf-export-progress">
+              {pdfProgress > 0 ? `${pdfProgress}%` : '…'}
+            </span>
+          ) : (
+            <FileDown size={15} />
+          )}
+        </button>
       </div>
     </header>
   );

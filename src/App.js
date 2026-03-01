@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChessData } from './hooks/useChessData';
+import { generatePDF } from './utils/exportPDF';
 import Header from './components/Header';
 import FilterPanel from './components/FilterPanel';
 import FilterDrawer from './components/FilterDrawer';
@@ -22,6 +23,8 @@ function App() {
   const { t } = useTranslation();
   const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [isHistoryDrawerOpen, setHistoryDrawerOpen] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
 
   // Layout detection: desktop (≥1100px), portrait (h > w), mobile landscape (default)
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1100);
@@ -46,6 +49,20 @@ function App() {
   } = useChessData();
 
   const { stats } = filteredData;
+
+  const handleExportPDF = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    setPdfProgress(0);
+    try {
+      await generatePDF({ filters, stats, t, setProgress: setPdfProgress });
+    } catch (e) {
+      console.error('PDF export failed', e);
+    } finally {
+      setPdfLoading(false);
+      setPdfProgress(0);
+    }
+  };
 
   const filterProps = {
     filters, setFilters, toggleMultiFilter, clearFilters,
@@ -147,6 +164,9 @@ function App() {
         mainTimeClass={stats.mainTimeClass}
         currentEloByMode={stats.currentEloByMode}
         maxEloByMode={stats.maxEloByMode}
+        onExportPDF={handleExportPDF}
+        pdfLoading={pdfLoading}
+        pdfProgress={pdfProgress}
       />
 
       <FilterPanel {...filterProps} />
@@ -175,7 +195,7 @@ function App() {
 
       <GameHistory games={filteredData.games} />
 
-      <footer className="footer">ChessAnalytics © {new Date().getFullYear()}</footer>
+      <footer className="footer">ChessAnalytics © {new Date().getFullYear()} · {t('footer.disclaimer')}</footer>
     </div>
   );
 }
