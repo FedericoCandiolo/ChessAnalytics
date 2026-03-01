@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { RESULT_COLORS } from '../constants';
 
 export default function GameCard({ game }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateStr = new Date(game.timestamp * 1000).toLocaleDateString(
+    i18n.language === 'en' ? 'en-US' : 'es-AR'
+  );
 
   const borderColor = game.outcome === 'victoria'
     ? RESULT_COLORS.win
@@ -20,7 +23,7 @@ export default function GameCard({ game }) {
       borderLeft: `0.3rem solid ${borderColor}`
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', opacity: 0.6, marginBottom: '0.3rem' }}>
-        <span>{game.date} • {game.time_class.toUpperCase()}</span>
+        <span>{dateStr} • {game.time_class.toUpperCase()}</span>
         <span>{game.playerIsWhite ? `⬜ ${t('filters.white')[0]}` : `⬛ ${t('filters.black')[0]}`}</span>
       </div>
       <div style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>{game.rating} vs {game.opponent.name}</div>

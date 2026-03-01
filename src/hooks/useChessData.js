@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ECO_DB, ECO_FAMILIES, INITIAL_FILTERS, RESULT_COLORS } from '../constants';
+import { ECO_DB, ECO_FAMILIES, FAMILY_LETTER, INITIAL_FILTERS, RESULT_COLORS, getOpeningDisplay } from '../constants';
 
 const DRAW_TYPES = ['agreed', 'repetition', 'stalemate', '50rule', 'insufficient', 'time_vs_insufficient'];
 
+// ── Pure helpers ─────────────────────────────────────────────────────────────
 function parseTimeControl(tc) {
   if (!tc || tc === '-' || tc.includes('/')) return null;
   const m = tc.match(/^(\d+)/);
@@ -26,109 +27,136 @@ function quantile(arr, q) {
   return s[lo] + (s[hi] - s[lo]) * (pos - lo);
 }
 
-export function useChessData() {
-  const { t, i18n } = useTranslation();
-  const [username, setUsername] = useState('faustinooro');
-  const [games, setGames] = useState([]);
-  const [ecoDb, setEcoDb] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
+// Returns true if the archive URL belongs to the current or previous calendar year.
+function isRecentArchive(url) {
+  const year = parseInt(url.match(/\/(\d{4})\/\d{2}$/)?.[1] ?? '0');
+  const now  = new Date().getFullYear();
+  return year === now || year === now - 1;
+}
 
-  useEffect(() => {
-    fetch('https://unpkg.com/chess-openings-list@1.0.0/dist/openings.json')
-      .then(res => res.json())
-      .then(data => {
-        const dict = {};
-        data.forEach(item => { if (item.eco) dict[item.eco] = item.name; });
-        setEcoDb(dict);
-      }).catch(() => console.warn("ECO DB Offline"));
+// ── Slim game factory ─────────────────────────────────────────────────────────
+// Only stores the fields actually needed downstream. No PGN, no full API objects.
+// ~200-300 bytes per game vs ~2-5 KB for the raw Chess.com object.
+function slimGame(g, userLower) {
+  const isWhite = g.white.username.toLowerCase() === userLower;
+  const myData  = isWhite ? g.white : g.black;
+  const oppData = isWhite ? g.black : g.white;
+  const ts      = g.end_time;
+  const d       = new Date(ts * 1000);
+  const isoDate = d.toISOString().slice(0, 10);
+  const eco     = g.pgn?.match(/\[ECO "([^"]+)"\]/)?.[1] ?? 'N/A';
+  const slug    = g.pgn?.match(/\[ECOUrl "https:\/\/www\.chess\.com\/openings\/([^"]+)"\]/)?.[1] ?? null;
+
+  return {
+    url:           g.url,
+    playerIsWhite: isWhite,
+    rating:        myData.rating,
+    rated:         g.rated ? 1 : 0,
+    time_class:    g.time_class,
+    rules:         g.rules || 'chess',
+    initialTime:   parseTimeControl(g.time_control),
+    accuracy:      g.accuracies ? Math.round(isWhite ? g.accuracies.white : g.accuracies.black) : null,
+    opponent:      { name: oppData.username, rating: oppData.rating },
+    year:          String(d.getFullYear()),
+    month:         isoDate.slice(0, 7),
+    monthNum:      d.getMonth() + 1,
+    weekday:       (d.getDay() + 6) % 7,   // Mon=0 … Sun=6
+    isoDate,
+    timestamp:     ts,
+    family:        ECO_FAMILIES[eco.charAt(0)] || 'Otros',
+    openingFull:   `${eco} – ${ECO_DB[eco] ?? 'Opening'}`,
+    openingLine:   slug ? slug.replace(/-/g, ' ') : null,
+    outcome:       myData.result === 'win' ? 'victoria' : (DRAW_TYPES.includes(myData.result) ? 'tablas' : 'derrota'),
+    termination:   myData.result,
+  };
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────────────
+export function useChessData() {
+  const { i18n } = useTranslation();
+
+  const [username, setUsernameRaw] = useState(
+    () => localStorage.getItem('chess-analytics-username') || 'magnuscarlsen'
+  );
+
+  // Wrap setter to persist username in localStorage
+  const setUsername = useCallback((name) => {
+    const trimmed = name.trim();
+    localStorage.setItem('chess-analytics-username', trimmed);
+    setUsernameRaw(trimmed);
   }, []);
+
+  // false = recent (current + previous year only, default); true = full history
+  const [fullHistory, setFullHistory] = useState(false);
+
+  // processedAll is state — raw API data processed inline in fetch effect and GC'd.
+  const [processedAll, setProcessedAll] = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState(null);
+  const [filters, setFilters]           = useState(INITIAL_FILTERS);
 
   useEffect(() => {
     if (!username) return;
-    const fetchAllHistory = async () => {
+    let cancelled = false;
+
+    const run = async () => {
       setLoading(true);
       setError(null);
-      setGames([]);
+      setProcessedAll([]); // release previous user's data immediately
+
       try {
         const res = await fetch(`https://api.chess.com/pub/player/${username}/games/archives`);
         if (!res.ok) throw new Error(`User not found: ${username}`);
         const json = await res.json();
-        if (!json.archives || json.archives.length === 0) throw new Error('No games found for this user.');
-        const responses = await Promise.all(
-          json.archives.map(url => fetch(url).then(r => r.ok ? r.json() : { games: [] }))
+        if (!json.archives?.length) throw new Error('No games found for this user.');
+
+        const userLower = username.toLowerCase();
+        const urls = fullHistory
+          ? json.archives
+          : json.archives.filter(isRecentArchive);
+
+        // Fetch all selected archives in parallel — no caching
+        const archiveSlims = await Promise.all(
+          urls.map(async url => {
+            const r   = await fetch(url);
+            const raw = r.ok ? ((await r.json()).games ?? []) : [];
+            return raw.map(g => slimGame(g, userLower)); // raw GC'd immediately
+          })
         );
-        setGames(responses.flatMap(m => m.games || []));
+
+        if (cancelled) return;
+
+        const all = archiveSlims.flat().sort((a, b) => a.timestamp - b.timestamp);
+        setProcessedAll(all);
       } catch (e) {
-        setError(e.message);
+        if (!cancelled) setError(e.message);
       }
-      setLoading(false);
+
+      if (!cancelled) setLoading(false);
     };
-    fetchAllHistory();
-  }, [username]);
 
-  const processedAll = useMemo(() => {
-    const fallbackName = t('charts.generalVariation');
+    run();
+    return () => { cancelled = true; };
+  }, [username, fullHistory]);
 
-    return games.map(g => {
-      const isWhite = g.white.username.toLowerCase() === username.toLowerCase();
-      const myData = isWhite ? g.white : g.black;
-      const dateObj = new Date(g.end_time * 1000);
-      const isoDate = dateObj.toISOString().slice(0, 10);
-      const ecoCode = g.pgn?.match(/\[ECO "(.*?)"\]/)?.[1] || "N/A";
-      const famKey = ecoCode.charAt(0);
-      const openingName = ECO_DB[ecoCode] || ecoDb[ecoCode] || fallbackName;
-      const ecoUrlRaw = g.pgn?.match(/\[ECOUrl "(https:\/\/www\.chess\.com\/openings\/([^"]+))"\]/)?.[2] || null;
-      const openingLine = ecoUrlRaw ? ecoUrlRaw.replace(/-/g, ' ') : null;
-      const dayOfWeek = dateObj.getDay(); // 0=Sun
-      const lang = i18n.language || 'en';
-      const dateLocale = lang === 'en' ? 'en-US' : 'es-AR';
-
-      return {
-        ...g,
-        playerIsWhite: isWhite,
-        rating: myData.rating,
-        rated: g.rated ? 1 : 0,
-        time_class: g.time_class,
-        rules: g.rules || 'chess',
-        initialTime: parseTimeControl(g.time_control),
-        accuracy: g.accuracies ? Math.round(isWhite ? g.accuracies.white : g.accuracies.black) : null,
-        opponent: { name: (isWhite ? g.black : g.white).username, rating: (isWhite ? g.black : g.white).rating },
-        year: dateObj.getFullYear().toString(),
-        month: isoDate.slice(0, 7),
-        monthNum: dateObj.getMonth() + 1,
-        weekday: (dayOfWeek + 6) % 7, // Mon=0..Sun=6
-        isoDate,
-        dateObj,
-        family: ECO_FAMILIES[famKey] || "Otros",
-        openingFull: `${ecoCode} – ${openingName}`,
-        openingLine,
-        outcome: myData.result === 'win' ? 'victoria' : (DRAW_TYPES.includes(myData.result) ? 'tablas' : 'derrota'),
-        termination: myData.result,
-        date: dateObj.toLocaleDateString(dateLocale),
-        timestamp: g.end_time
-      };
-    }).sort((a, b) => a.timestamp - b.timestamp);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [games, username, ecoDb, i18n.language]);
-
-  // ── Static available options (from all games) ───────────────────────────
-  const yearsAvailable = useMemo(() => [...new Set(processedAll.map(g => g.year))].sort().reverse(), [processedAll]);
-  const familiesAvailable = useMemo(() => [...new Set(processedAll.map(g => g.family))].sort(), [processedAll]);
+  // ── Static available options (from all games, unfiltered) ────────────────
+  const yearsAvailable       = useMemo(() => [...new Set(processedAll.map(g => g.year))].sort().reverse(), [processedAll]);
+  const familiesAvailable    = useMemo(() =>
+    [...new Set(processedAll.map(g => g.family))].sort((a, b) => {
+      const la = FAMILY_LETTER[a] || 'Z', lb = FAMILY_LETTER[b] || 'Z';
+      return la.localeCompare(lb);
+    }), [processedAll]);
   const timeClassesAvailable = useMemo(() => [...new Set(processedAll.map(g => g.time_class))].sort(), [processedAll]);
-  const rulesAvailable = useMemo(() => [...new Set(processedAll.map(g => g.rules).filter(Boolean))].sort(), [processedAll]);
-  const monthsAvailable = useMemo(() => [...new Set(processedAll.map(g => g.monthNum).filter(Boolean))].sort((a, b) => a - b), [processedAll]);
-  const ratedAvailable = useMemo(() => [...new Set(processedAll.map(g => g.rated))].sort().reverse(), [processedAll]);
+  const rulesAvailable       = useMemo(() => [...new Set(processedAll.map(g => g.rules).filter(Boolean))].sort(), [processedAll]);
+  const monthsAvailable      = useMemo(() => [...new Set(processedAll.map(g => g.monthNum).filter(Boolean))].sort((a, b) => a - b), [processedAll]);
+  const ratedAvailable       = useMemo(() => [...new Set(processedAll.map(g => g.rated))].sort().reverse(), [processedAll]);
 
-  // Openings available filtered by current family selection
   const openingsAvailable = useMemo(() => {
     const source = filters.family === 'all' ? processedAll : processedAll.filter(g => g.family === filters.family);
     return [...new Set(source.map(g => g.openingFull))].sort();
   }, [processedAll, filters.family]);
 
-  // ── Active options (for disabled chip visual) ───────────────────────────
-  // For each filter key, compute which values are "live" given all OTHER filters
+  // ── Active options (for disabled-chip visual) ─────────────────────────────
   const makeActiveSet = (excludeKey, valueGetter) => {
     const other = processedAll.filter(g => {
       if (excludeKey !== 'years'       && filters.years.length > 0       && !filters.years.includes(g.year)) return false;
@@ -138,8 +166,8 @@ export function useChessData() {
       if (excludeKey !== 'rules'       && filters.rules.length > 0       && !filters.rules.includes(g.rules)) return false;
       if (excludeKey !== 'months'      && filters.months.length > 0      && !filters.months.includes(g.monthNum)) return false;
       if (excludeKey !== 'rated'       && filters.rated.length > 0       && !filters.rated.includes(g.rated)) return false;
-      if (filters.family !== 'all'     && g.family !== filters.family) return false;
-      if (filters.opening !== 'all'    && g.openingFull !== filters.opening) return false;
+      if (filters.family !== 'all'  && g.family !== filters.family) return false;
+      if (filters.opening !== 'all' && g.openingFull !== filters.opening) return false;
       if (filters.dateFrom) { const [fy,fm,fd] = filters.dateFrom.split('-').map(Number); if (g.timestamp*1000 < new Date(fy,fm-1,fd).getTime()) return false; }
       if (filters.dateTo)   { const [ty,tm,td] = filters.dateTo.split('-').map(Number);   if (g.timestamp*1000 >= new Date(ty,tm-1,td+1).getTime()) return false; }
       return true;
@@ -162,7 +190,7 @@ export function useChessData() {
   const activeRated       = useMemo(() => makeActiveSet('rated',       g => g.rated),                                 // eslint-disable-next-line react-hooks/exhaustive-deps
     [processedAll, filters]);
 
-  // ── Filtered data + derived stats ──────────────────────────────────────
+  // ── Filtered data + derived stats ─────────────────────────────────────────
   const filteredData = useMemo(() => {
     const data = processedAll.filter(g => {
       if (filters.years.length > 0       && !filters.years.includes(g.year)) return false;
@@ -179,75 +207,80 @@ export function useChessData() {
       return true;
     });
 
-    const results  = { victoria: 0, derrota: 0, tablas: 0 };
-    const opStats  = {};
-    const eloByDay = {};
+    const xlOpening = name => getOpeningDisplay(name, i18n.language);
+
+    const results    = { victoria: 0, derrota: 0, tablas: 0 };
+    const opStats    = {};
+    const eloByDay   = {};
     const accBuckets = { '<50': 0, '50-59': 0, '60-69': 0, '70-79': 0, '80-89': 0, '90+': 0 };
     const colorStats = [
       { name: 'white', victoria: 0, tablas: 0, derrota: 0 },
-      { name: 'black', victoria: 0, tablas: 0, derrota: 0 }
+      { name: 'black', victoria: 0, tablas: 0, derrota: 0 },
     ];
-    const monthMap = {};
-    const timeClassCounts = {};
-    const eloByMode = {};
-    const calendarMap = {};
-    const weekdayNetScores = Array.from({ length: 7 }, () => []);
+    const monthMap          = {};
+    const timeClassCounts   = {};
+    const eloByMode         = {};
+    const calendarMap       = {};
+    const weekdayNetScores  = Array.from({ length: 7 }, () => []);
+    const locale            = i18n.language === 'en' ? 'en-US' : 'es-AR';
 
     data.forEach(g => {
       results[g.outcome]++;
 
-      // Openings
-      if (!opStats[g.openingFull]) opStats[g.openingFull] = { name: g.openingFull, family: g.family, victoria: 0, tablas: 0, derrota: 0, total: 0 };
-      opStats[g.openingFull][g.outcome]++;
-      opStats[g.openingFull].total++;
+      // Openings — use language-specific display name as key
+      const opKey = xlOpening(g.openingFull);
+      if (!opStats[opKey]) opStats[opKey] = { name: opKey, family: g.family, victoria: 0, tablas: 0, derrota: 0, total: 0 };
+      opStats[opKey][g.outcome]++;
+      opStats[opKey].total++;
 
-      // ELO by day — track array per TC for min/max/final band
-      if (!eloByDay[g.isoDate]) eloByDay[g.isoDate] = { name: g.date, isoDate: g.isoDate, dateObj: g.dateObj };
+      // ELO by day — dateObj computed on-demand from timestamp (not stored in slim)
+      if (!eloByDay[g.isoDate]) {
+        const d = new Date(g.timestamp * 1000);
+        eloByDay[g.isoDate] = { name: d.toLocaleDateString(locale), isoDate: g.isoDate, dateObj: d };
+      }
       const tcKey = `_${g.time_class}`;
       if (!eloByDay[g.isoDate][tcKey]) eloByDay[g.isoDate][tcKey] = [];
       eloByDay[g.isoDate][tcKey].push(g.rating);
 
       // Accuracy buckets
       if (g.accuracy !== null) {
-        if (g.accuracy < 50) accBuckets['<50']++;
+        if      (g.accuracy < 50) accBuckets['<50']++;
         else if (g.accuracy < 60) accBuckets['50-59']++;
         else if (g.accuracy < 70) accBuckets['60-69']++;
         else if (g.accuracy < 80) accBuckets['70-79']++;
         else if (g.accuracy < 90) accBuckets['80-89']++;
-        else accBuckets['90+']++;
+        else                      accBuckets['90+']++;
       }
 
       colorStats[g.playerIsWhite ? 0 : 1][g.outcome]++;
 
-      // Monthly
-      const monthKey = g.month;
-      if (!monthMap[monthKey]) monthMap[monthKey] = { month: monthKey, victoria: 0, derrota: 0, tablas: 0, total: 0 };
-      monthMap[monthKey][g.outcome]++;
-      monthMap[monthKey].total++;
-      if (g.time_class) monthMap[monthKey][g.time_class] = (monthMap[monthKey][g.time_class] || 0) + 1;
+      // Monthly trend
+      if (!monthMap[g.month]) monthMap[g.month] = { month: g.month, victoria: 0, derrota: 0, tablas: 0, total: 0 };
+      monthMap[g.month][g.outcome]++;
+      monthMap[g.month].total++;
+      if (g.time_class) monthMap[g.month][g.time_class] = (monthMap[g.month][g.time_class] || 0) + 1;
 
-      // Time class counts
+      // Time class counts + ELO by mode
       timeClassCounts[g.time_class] = (timeClassCounts[g.time_class] || 0) + 1;
       if (!eloByMode[g.time_class]) eloByMode[g.time_class] = [];
       eloByMode[g.time_class].push(g.rating);
 
       // Calendar
       if (!calendarMap[g.isoDate]) calendarMap[g.isoDate] = { date: g.isoDate, wins: 0, losses: 0, draws: 0 };
-      if (g.outcome === 'victoria')  calendarMap[g.isoDate].wins++;
-      else if (g.outcome === 'derrota') calendarMap[g.isoDate].losses++;
-      else calendarMap[g.isoDate].draws++;
+      if      (g.outcome === 'victoria') calendarMap[g.isoDate].wins++;
+      else if (g.outcome === 'derrota')  calendarMap[g.isoDate].losses++;
+      else                               calendarMap[g.isoDate].draws++;
 
-      // Weekday net scores (Mon=0..Sun=6)
-      const netVal = g.outcome === 'victoria' ? 1 : g.outcome === 'derrota' ? -1 : 0;
-      weekdayNetScores[g.weekday].push(netVal);
+      // Weekday net scores (Mon=0 … Sun=6)
+      weekdayNetScores[g.weekday].push(g.outcome === 'victoria' ? 1 : g.outcome === 'derrota' ? -1 : 0);
     });
 
-    // Resolve ELO day bands
+    // Resolve ELO day bands (final/min/max per time class)
     const TIME_CLASSES = ['rapid', 'blitz', 'bullet', 'daily'];
     Object.values(eloByDay).forEach(day => {
       TIME_CLASSES.forEach(tc => {
         const arr = day[`_${tc}`];
-        if (arr && arr.length > 0) {
+        if (arr?.length) {
           day[tc]          = arr[arr.length - 1];
           day[`${tc}_min`] = Math.min(...arr);
           day[`${tc}_max`] = Math.max(...arr);
@@ -259,64 +292,48 @@ export function useChessData() {
     const total   = data.length;
     const winRate = total > 0 ? Math.round((results.victoria / total) * 100) : 0;
 
-    const locale = i18n.language === 'en' ? 'en-US' : 'es-AR';
     const monthlyTrend = Object.values(monthMap)
       .sort((a, b) => a.month.localeCompare(b.month))
       .map(m => {
         const [yr, mo] = m.month.split('-').map(Number);
         return {
           ...m,
-          label: new Date(yr, mo - 1, 1).toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
+          label:   new Date(yr, mo - 1, 1).toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
           winRate: m.total > 0 ? Math.round((m.victoria / m.total) * 100) : 0,
-          bullet: m.bullet || 0,
-          blitz:  m.blitz  || 0,
-          rapid:  m.rapid  || 0,
-          daily:  m.daily  || 0,
+          bullet:  m.bullet || 0,
+          blitz:   m.blitz  || 0,
+          rapid:   m.rapid  || 0,
+          daily:   m.daily  || 0,
         };
       });
 
-    // Accuracy vs ELO scatter
     const accuracyVsElo = data
       .filter(g => g.accuracy !== null && g.accuracy > 0)
       .map(g => ({
-        elo: g.rating,
-        accuracy: g.accuracy,
-        result: g.outcome,
+        elo: g.rating, accuracy: g.accuracy, result: g.outcome,
         color: g.playerIsWhite ? 'white' : 'black',
-        opponent: g.opponent?.name || '',
-        opponentRating: g.opponent?.rating || 0
+        opponent: g.opponent?.name || '', opponentRating: g.opponent?.rating || 0,
       }));
 
-    // Opening bubbles (family + net score)
-    const openingBubbles = Object.values(opStats).map(op => ({
-      ...op,
-      netScore: op.victoria - op.derrota
-    }));
+    const openingBubbles = Object.values(opStats).map(op => ({ ...op, netScore: op.victoria - op.derrota }));
+    const calendarData   = Object.values(calendarMap).map(d => ({ ...d, net: d.wins - d.losses }));
 
-    // Calendar data
-    const calendarData = Object.values(calendarMap).map(d => ({
-      ...d,
-      net: d.wins - d.losses
-    }));
-
-    // Weekday radial data — IQR + range per weekday
     const weekdayData = weekdayNetScores.map((scores, wd) => ({
       weekday: wd,
-      count: scores.length,
-      median: scores.length ? median(scores) : 0,
-      q1:     scores.length ? quantile(scores, 0.25) : 0,
-      q3:     scores.length ? quantile(scores, 0.75) : 0,
-      min:    scores.length ? Math.min(...scores) : 0,
-      max:    scores.length ? Math.max(...scores) : 0
+      count:   scores.length,
+      median:  scores.length ? median(scores) : 0,
+      q1:      scores.length ? quantile(scores, 0.25) : 0,
+      q3:      scores.length ? quantile(scores, 0.75) : 0,
+      min:     scores.length ? Math.min(...scores) : 0,
+      max:     scores.length ? Math.max(...scores) : 0,
     }));
 
-    // Main time class and ELO by mode
     const mainTimeClass = Object.entries(timeClassCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
     const currentEloByMode = {};
-    const maxEloByMode = {};
+    const maxEloByMode     = {};
     Object.entries(eloByMode).forEach(([mode, ratings]) => {
       currentEloByMode[mode] = ratings[ratings.length - 1];
-      maxEloByMode[mode] = Math.max(...ratings);
+      maxEloByMode[mode]     = Math.max(...ratings);
     });
 
     return {
@@ -325,11 +342,11 @@ export function useChessData() {
         pie: [
           { name: 'Victorias', value: results.victoria, color: RESULT_COLORS.win },
           { name: 'Derrotas',  value: results.derrota,  color: RESULT_COLORS.loss },
-          { name: 'Tablas',    value: results.tablas,   color: RESULT_COLORS.draw }
+          { name: 'Tablas',    value: results.tablas,   color: RESULT_COLORS.draw },
         ],
-        elo: Object.values(eloByDay).slice(-150),
+        elo:             Object.values(eloByDay).slice(-150),
         stackedOpenings: Object.values(opStats).sort((a, b) => b.total - a.total).slice(0, 50),
-        currentElo: data[data.length - 1]?.rating || '---',
+        currentElo:      data[data.length - 1]?.rating || '---',
         winRate,
         accuracyBuckets: Object.entries(accBuckets).map(([bucket, count]) => ({ bucket, count })),
         colorStats,
@@ -340,15 +357,15 @@ export function useChessData() {
         weekdayData,
         mainTimeClass,
         currentEloByMode,
-        maxEloByMode
-      }
+        maxEloByMode,
+      },
     };
   }, [processedAll, filters, i18n.language]);
 
   const toggleMultiFilter = (key, value) => {
     setFilters(prev => ({
       ...prev,
-      [key]: prev[key].includes(value) ? prev[key].filter(i => i !== value) : [...prev[key], value]
+      [key]: prev[key].includes(value) ? prev[key].filter(i => i !== value) : [...prev[key], value],
     }));
   };
 
@@ -357,6 +374,8 @@ export function useChessData() {
   return {
     username,
     setUsername,
+    fullHistory,
+    setFullHistory,
     loading,
     error,
     filters,
@@ -377,6 +396,6 @@ export function useChessData() {
     activeRules,
     activeMonths,
     activeRated,
-    filteredData
+    filteredData,
   };
 }

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
-import { FAMILY_COLORS } from '../constants';
+import { FAMILY_COLORS, FAMILY_LETTER } from '../constants';
 import { Maximize2, X } from 'lucide-react';
 
 export default function OpeningBubblesChart({ data }) {
@@ -152,6 +152,24 @@ export default function OpeningBubblesChart({ data }) {
         });
       }
 
+      // Family cluster labels — drawn after circles (appear on top)
+      // paint-order: stroke fill draws the dark halo behind the colored text
+      const familyLabelG = bubbleG.append('g').style('pointer-events', 'none');
+      families.forEach(fam => {
+        const { x: cx, y: cy } = clusterCenters[fam];
+        const letter = FAMILY_LETTER[fam] || '?';
+        const color  = FAMILY_COLORS[fam] || '#94a3b8';
+        const label  = `${letter} – ${t(`ecoFamilies.${fam}`, fam)}`;
+        familyLabelG.append('text')
+          .attr('x', cx).attr('y', cy)
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .style('font-size', '10px').style('font-weight', '700')
+          .style('fill', color)
+          .style('stroke', '#0d1117').style('stroke-width', '4px')
+          .style('paint-order', 'stroke fill')
+          .text(label);
+      });
+
       const ticked = () => {
         circles.attr('cx', d => d.x).attr('cy', d => d.y);
       };
@@ -181,12 +199,13 @@ export default function OpeningBubblesChart({ data }) {
           .attr('fill', 'none')
           .attr('stroke', FAMILY_COLORS[fam])
           .attr('stroke-width', 2);
+        const letter = FAMILY_LETTER[fam] || '?';
         legG.append('text')
           .attr('x', lx + 18)
           .attr('y', 12)
           .style('font-size', '10px')
           .style('fill', '#94a3b8')
-          .text(t(`ecoFamilies.${fam}`, fam));
+          .text(`${letter} – ${t(`ecoFamilies.${fam}`, fam)}`);
       });
 
       // Row 2: net score gradient bar

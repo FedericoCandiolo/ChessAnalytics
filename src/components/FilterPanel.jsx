@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RESULT_COLORS } from '../constants';
+import { RESULT_COLORS, FAMILY_LETTER, getOpeningDisplay } from '../constants';
 
 const ITEM_BG = '#2d333f';
 
@@ -113,7 +113,10 @@ export default function FilterPanel({
         <select className="filter-select" style={{ background: ITEM_BG }} value={filters.family}
           onChange={e => setFilters({ ...filters, family: e.target.value, opening: 'all' })}>
           <option value="all">{t('filters.all')}</option>
-          {familiesAvailable.map(f => <option key={f} value={f}>{t(`ecoFamilies.${f}`, f)}</option>)}
+          {familiesAvailable.map(f => {
+            const letter = FAMILY_LETTER[f] || '?';
+            return <option key={f} value={f}>{letter} – {t(`ecoFamilies.${f}`, f)}</option>;
+          })}
         </select>
       </div>
 
@@ -123,7 +126,10 @@ export default function FilterPanel({
         <select className="filter-select" style={{ background: ITEM_BG }} value={filters.opening}
           onChange={e => setFilters({ ...filters, opening: e.target.value })}>
           <option value="all">{t('filters.allOpenings')}</option>
-          {openingsAvailable.map(op => <option key={op} value={op}>{op.length > 38 ? op.slice(0, 37) + '…' : op}</option>)}
+          {openingsAvailable.map(op => {
+            const display = getOpeningDisplay(op, i18n.language);
+            return <option key={op} value={op}>{display.length > 38 ? display.slice(0, 37) + '…' : display}</option>;
+          })}
         </select>
       </div>
 

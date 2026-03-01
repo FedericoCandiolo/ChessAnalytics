@@ -1,7 +1,9 @@
 {
   "header": {
     "analyzePlayer": "Analizar Jugador",
-    "playerPlaceholder": "FaustinoOro",
+    "playerPlaceholder": "MagnusCarlsen",
+    "recent": "Reciente",
+    "fullHistory": "Completo",
     "currentElo": "ELO",
     "maxElo": "MÁX",
     "games": "PARTIDAS",

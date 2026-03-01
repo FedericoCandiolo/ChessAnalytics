@@ -40,7 +40,7 @@ function App() {
   }, []);
 
   const {
-    setUsername, loading, error,
+    setUsername, fullHistory, setFullHistory, loading, error,
     filters, setFilters, toggleMultiFilter, clearFilters,
     yearsAvailable, familiesAvailable, openingsAvailable,
     timeClassesAvailable, rulesAvailable, monthsAvailable, ratedAvailable,
@@ -167,6 +167,8 @@ function App() {
         onExportPDF={handleExportPDF}
         pdfLoading={pdfLoading}
         pdfProgress={pdfProgress}
+        fullHistory={fullHistory}
+        onToggleHistory={setFullHistory}
       />
 
       <FilterPanel {...filterProps} />

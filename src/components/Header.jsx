@@ -15,7 +15,7 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress }) {
+export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory }) {
   const { t } = useTranslation();
   const modeColor = ELO_COLORS[mainTimeClass] || '#01B6FF';
   const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
@@ -59,6 +59,27 @@ export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainT
           </span>
           <input className="search-input" placeholder={t('header.playerPlaceholder')}
             onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())} />
+          {/* History range toggle */}
+          <div style={{ display: 'flex', gap: 0, marginTop: '0.25rem', background: '#0f172a', borderRadius: '5px', padding: '2px' }}>
+            <button
+              onClick={() => onToggleHistory(false)}
+              style={{
+                flex: 1, padding: '2px 6px', borderRadius: '3px', border: 'none', cursor: 'pointer',
+                fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', transition: 'all 0.15s',
+                background: !fullHistory ? '#334155' : 'transparent',
+                color: !fullHistory ? '#e2e8f0' : '#475569',
+              }}
+            >{t('header.recent')}</button>
+            <button
+              onClick={() => onToggleHistory(true)}
+              style={{
+                flex: 1, padding: '2px 6px', borderRadius: '3px', border: 'none', cursor: 'pointer',
+                fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', transition: 'all 0.15s',
+                background: fullHistory ? '#334155' : 'transparent',
+                color: fullHistory ? '#e2e8f0' : '#475569',
+              }}
+            >{t('header.fullHistory')}</button>
+          </div>
         </div>
 
         <LangSwitcher />

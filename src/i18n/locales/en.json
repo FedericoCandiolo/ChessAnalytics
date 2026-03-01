@@ -1,7 +1,9 @@
 {
   "header": {
     "analyzePlayer": "Analyze Player",
-    "playerPlaceholder": "FaustinoOro",
+    "playerPlaceholder": "MagnusCarlsen",
+    "recent": "Recent",
+    "fullHistory": "Full History",
     "currentElo": "ELO",
     "maxElo": "MAX",
     "games": "GAMES",
