@@ -72,7 +72,8 @@
     "netScore": "Diferencia",
     "cumulative": "Acumulado",
     "paretoIn": "En equilibrio Pareto",
-    "paretoOut": "Fuera del equilibrio"
+    "paretoOut": "Fuera del equilibrio",
+    "others": "Otros"
   },
   "slides": {
     "results": "Resultados",

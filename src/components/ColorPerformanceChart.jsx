@@ -92,7 +92,7 @@ export default function ColorPerformanceChart({ data }) {
   return (
     <>
       {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
-      <div className={`chart-card${maximized ? ' chart-card--max' : ''}`}>
+      <div className={`chart-card${maximized ? ' chart-card--max' : ''}`} data-chart="color">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexShrink: 0 }}>
           <h4 style={{ margin: 0, fontSize: '0.875rem' }}>{t('charts.colorPerformance')}</h4>
           <button className="chart-max-btn" style={{ opacity: 1 }} onClick={() => setMaximized(m => !m)}>

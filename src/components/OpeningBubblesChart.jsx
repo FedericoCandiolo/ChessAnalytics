@@ -84,8 +84,8 @@ export default function OpeningBubblesChart({ data }) {
       const clusterCenters = {};
       families.forEach((fam, i) => {
         clusterCenters[fam] = {
-          x: iW / 2 + Math.cos(angleOf(i)) * iW * 0.28,
-          y: iH / 2 + Math.sin(angleOf(i)) * iH * 0.28,
+          x: iW / 2 + Math.cos(angleOf(i)) * iW * 0.18,
+          y: iH / 2 + Math.sin(angleOf(i)) * iH * 0.18,
         };
       });
 
@@ -147,8 +147,8 @@ export default function OpeningBubblesChart({ data }) {
         nodes.forEach(d => {
           const center = clusterCenters[d.family];
           if (!center) return;
-          d.vx += (center.x - d.x) * alpha * 0.3;
-          d.vy += (center.y - d.y) * alpha * 0.3;
+          d.vx += (center.x - d.x) * alpha * 0.55;
+          d.vy += (center.y - d.y) * alpha * 0.55;
         });
       }
 
@@ -175,7 +175,7 @@ export default function OpeningBubblesChart({ data }) {
       };
 
       const sim = d3.forceSimulation(nodes)
-        .force('charge', d3.forceManyBody().strength(-20))
+        .force('charge', d3.forceManyBody().strength(-8))
         .force('collide', d3.forceCollide(d => radius(d) + 2).iterations(3))
         .force('cluster', clusterForce)
         .on('tick', ticked);
@@ -273,6 +273,7 @@ export default function OpeningBubblesChart({ data }) {
       {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
       <div
         className={`chart-card${maximized ? ' chart-card--max' : ''}`}
+        data-chart="bubbles"
         style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
       >
         <div

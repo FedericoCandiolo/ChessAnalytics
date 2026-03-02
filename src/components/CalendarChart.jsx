@@ -260,6 +260,7 @@ export default function CalendarChart({ data }) {
       {maximized && <div className="chart-max-overlay" onClick={() => setMaximized(false)} />}
       <div
         className={`chart-card${maximized ? ' chart-card--max' : ''}`}
+        data-chart="calendar"
         style={{ display: 'flex', flexDirection: 'column' }}
       >
         <div

@@ -15,7 +15,7 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory }) {
+export default function Header({ currentElo, gamesCount, username, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory }) {
   const { t } = useTranslation();
   const modeColor = ELO_COLORS[mainTimeClass] || '#01B6FF';
   const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
@@ -24,7 +24,7 @@ export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainT
   return (
     <header className="header">
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <img src="/logo.png" alt="ChessAnalytics Logo"
+        <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="ChessAnalytics Logo"
           style={{ height: '2.5rem', width: 'auto', borderRadius: '0.25rem' }} />
       </div>
 
@@ -58,6 +58,7 @@ export default function Header({ currentElo, gamesCount, onUsernameSubmit, mainT
             {t('header.analyzePlayer')}:
           </span>
           <input className="search-input" placeholder={t('header.playerPlaceholder')}
+            defaultValue={username}
             onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())} />
           {/* History range toggle */}
           <div style={{ display: 'flex', gap: 0, marginTop: '0.25rem', background: '#0f172a', borderRadius: '5px', padding: '2px' }}>

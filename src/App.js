@@ -40,7 +40,7 @@ function App() {
   }, []);
 
   const {
-    setUsername, fullHistory, setFullHistory, loading, error,
+    username, setUsername, fullHistory, setFullHistory, loading, error,
     filters, setFilters, toggleMultiFilter, clearFilters,
     yearsAvailable, familiesAvailable, openingsAvailable,
     timeClassesAvailable, rulesAvailable, monthsAvailable, ratedAvailable,
@@ -160,6 +160,7 @@ function App() {
       <Header
         currentElo={stats.currentElo}
         gamesCount={filteredData.games.length}
+        username={username}
         onUsernameSubmit={setUsername}
         mainTimeClass={stats.mainTimeClass}
         currentEloByMode={stats.currentEloByMode}

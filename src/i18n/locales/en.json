@@ -72,7 +72,8 @@
     "netScore": "Net score",
     "cumulative": "Cumulative",
     "paretoIn": "Pareto equilibrium",
-    "paretoOut": "Outside Pareto"
+    "paretoOut": "Outside Pareto",
+    "others": "Others"
   },
   "slides": {
     "results": "Results",
