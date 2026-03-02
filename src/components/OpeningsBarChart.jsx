@@ -2,10 +2,9 @@ import React, { useRef, useEffect, useState } from 'react';
 
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
-import { RESULT_COLORS } from '../constants';
 import { Maximize2, X } from 'lucide-react';
 
-export default function OpeningsBarChart({ data }) {
+export default function OpeningsBarChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -30,6 +29,12 @@ export default function OpeningsBarChart({ data }) {
       if (!width) return;
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN   = cs.getPropertyValue('--color-win').trim()   || '#00FF9C';
+      const DRAW  = cs.getPropertyValue('--color-draw').trim()  || '#FFF301';
+      const LOSS  = cs.getPropertyValue('--color-loss').trim()  || '#FF0101';
+      const CTEXT = cs.getPropertyValue('--chart-text').trim()  || '#94a3b8';
+
       const barH = 22;
       const ml = 130, mr = 56, mt = 8, mb = 32;
       const innerW = Math.max(10, width - ml - mr);
@@ -46,7 +51,7 @@ export default function OpeningsBarChart({ data }) {
       const y    = d3.scaleBand().domain(data.map(d => d.name)).range([0, innerH]).padding(0.25);
 
       const stack  = d3.stack().keys(['victoria', 'tablas', 'derrota']);
-      const colors = [RESULT_COLORS.win, RESULT_COLORS.draw, RESULT_COLORS.loss];
+      const colors = [WIN, DRAW, LOSS];
       const names  = [t('results.wins'), t('results.drawsLabel'), t('results.losses')];
 
       // Stacked bars with animation
@@ -65,9 +70,9 @@ export default function OpeningsBarChart({ data }) {
             const lp = d.data.total > 0 ? Math.round(d.data.derrota  / d.data.total * 100) : 0;
             tt.html(`<strong>${d.data.name.length > 40 ? d.data.name.slice(0,39)+'…' : d.data.name}</strong>
               <hr style="border:none;border-top:1px solid #2d333f;margin:4px 0"/>
-              <span style="color:${RESULT_COLORS.win}">▮ ${t('results.wins')}: ${d.data.victoria} (${wp}%)</span><br/>
-              <span style="color:${RESULT_COLORS.draw}">▮ ${t('results.drawsLabel')}: ${d.data.tablas} (${dp}%)</span><br/>
-              <span style="color:${RESULT_COLORS.loss}">▮ ${t('results.losses')}: ${d.data.derrota} (${lp}%)</span><br/>
+              <span style="color:${WIN}">▮ ${t('results.wins')}: ${d.data.victoria} (${wp}%)</span><br/>
+              <span style="color:${DRAW}">▮ ${t('results.drawsLabel')}: ${d.data.tablas} (${dp}%)</span><br/>
+              <span style="color:${LOSS}">▮ ${t('results.losses')}: ${d.data.derrota} (${lp}%)</span><br/>
               ${t('charts.gamesLabel')}: <strong>${d.data.total}</strong>`)
               .style('opacity', '1').style('left', `${event.clientX + 14}px`).style('top', `${event.clientY - 14}px`);
           })
@@ -87,7 +92,7 @@ export default function OpeningsBarChart({ data }) {
             .attr('x', 0).attr('y', y(d.name))
             .attr('width', x(d.total)).attr('height', y.bandwidth())
             .attr('fill', 'none')
-            .attr('stroke', RESULT_COLORS.win)
+            .attr('stroke', WIN)
             .attr('stroke-width', 1.5)
             .attr('rx', 3)
             .attr('pointer-events', 'none')
@@ -99,12 +104,12 @@ export default function OpeningsBarChart({ data }) {
       // Total count labels
       g.selectAll('.lbl').data(data).join('text').attr('class', 'lbl')
         .attr('x', d => x(d.total) + 4).attr('y', d => y(d.name) + y.bandwidth() / 2 + 1)
-        .attr('dy', '0.35em').style('font-size', '9px').style('fill', '#94a3b8').text(d => d.total);
+        .attr('dy', '0.35em').style('font-size', '9px').style('fill', CTEXT).text(d => d.total);
 
       // Y axis (opening names)
       const axisG = g.append('g').call(d3.axisLeft(y).tickSize(0));
       axisG.selectAll('text')
-        .style('font-size', '9px').style('fill', '#94a3b8')
+        .style('font-size', '9px').style('fill', CTEXT)
         .style('pointer-events', 'all').style('cursor', 'default')
         .each(function() {
           const el = d3.select(this);
@@ -135,14 +140,14 @@ export default function OpeningsBarChart({ data }) {
       colors.forEach((c, i) => {
         const lx = i * legItemW;
         legG.append('rect').attr('x', lx).attr('y', -14).attr('width', 8).attr('height', 8).attr('fill', c).attr('rx', 2);
-        legG.append('text').attr('x', lx + 11).attr('y', -7).style('font-size', '9px').style('fill', '#94a3b8').text(names[i]);
+        legG.append('text').attr('x', lx + 11).attr('y', -7).style('font-size', '9px').style('fill', CTEXT).text(names[i]);
       });
       // Pareto legend entry — only shown when there is enough horizontal room
       const px = 3 * legItemW;
       if (ml + px + 80 <= width) {
         legG.append('rect').attr('x', px).attr('y', -14).attr('width', 14).attr('height', 8)
-          .attr('fill', 'none').attr('stroke', RESULT_COLORS.win).attr('stroke-width', 1.5).attr('rx', 2);
-        legG.append('text').attr('x', px + 18).attr('y', -7).style('font-size', '9px').style('fill', '#94a3b8').text(t('charts.paretoIn'));
+          .attr('fill', 'none').attr('stroke', WIN).attr('stroke-width', 1.5).attr('rx', 2);
+        legG.append('text').attr('x', px + 18).attr('y', -7).style('font-size', '9px').style('fill', CTEXT).text(t('charts.paretoIn'));
       }
     };
 
@@ -150,7 +155,7 @@ export default function OpeningsBarChart({ data }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   return (
     <>

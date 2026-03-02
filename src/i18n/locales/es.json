@@ -132,6 +132,13 @@
     "noFilters": "Sin filtros aplicados — se muestran todas las partidas",
     "summary": "Resumen"
   },
+  "themes": {
+    "dark": "Modo oscuro",
+    "light": "Modo claro",
+    "deuteranopia": "Deuteranopía (rojo-verde)",
+    "protanopia": "Protanopía (rojo-verde)",
+    "tritanopia": "Tritanopía (azul-amarillo)"
+  },
   "footer": {
     "disclaimer": "Usa datos públicos de Chess.com · No estamos afiliados con Chess.com"
   },

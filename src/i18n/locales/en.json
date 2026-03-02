@@ -132,6 +132,13 @@
     "noFilters": "No filters applied — all games shown",
     "summary": "Summary"
   },
+  "themes": {
+    "dark": "Dark mode",
+    "light": "Light mode",
+    "deuteranopia": "Deuteranopia (red-green)",
+    "protanopia": "Protanopia (red-green)",
+    "tritanopia": "Tritanopia (blue-yellow)"
+  },
   "footer": {
     "disclaimer": "Uses Chess.com public data · Not affiliated with Chess.com"
   },

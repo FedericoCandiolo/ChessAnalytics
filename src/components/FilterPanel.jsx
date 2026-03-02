@@ -1,8 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RESULT_COLORS, FAMILY_LETTER, getOpeningDisplay } from '../constants';
-
-const ITEM_BG = '#2d333f';
+import { FAMILY_LETTER, getOpeningDisplay } from '../constants';
 
 const MONTH_ABBR = {
   es: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
@@ -23,13 +21,13 @@ function MultiChip({ items, active, onToggle, labelFn, available }) {
             title={!avail ? '—' : undefined}
             style={{
               padding: '3px 7px', borderRadius: '4px',
-              border: `1px solid ${on ? RESULT_COLORS.win : avail ? '#334155' : '#1e2533'}`,
+              border: `1px solid ${on ? 'var(--color-win)' : avail ? 'var(--color-border-subtle)' : 'transparent'}`,
               fontSize: '10px', cursor: avail || on ? 'pointer' : 'default',
-              background: on ? RESULT_COLORS.win : avail ? '#0f172a' : '#0a0d14',
-              color: on ? '#000' : avail ? 'white' : '#3d4d63',
+              background: on ? 'var(--color-win)' : 'var(--color-bg-dark)',
+              color: on ? '#000' : 'var(--color-text-primary)',
               fontWeight: on ? '700' : '400',
               textTransform: 'uppercase', transition: 'all 0.15s',
-              opacity: avail || on ? 1 : 0.45
+              opacity: avail || on ? 1 : 0.35
             }}
           >
             {labelFn ? labelFn(v) : v}
@@ -110,7 +108,7 @@ export default function FilterPanel({
       {/* FAMILIA APERTURA */}
       <div className="filter-group">
         <label className="filter-label">{t('filters.openingFamily')}</label>
-        <select className="filter-select" style={{ background: ITEM_BG }} value={filters.family}
+        <select className="filter-select" style={{ background: 'var(--color-item-bg)' }} value={filters.family}
           onChange={e => setFilters({ ...filters, family: e.target.value, opening: 'all' })}>
           <option value="all">{t('filters.all')}</option>
           {familiesAvailable.map(f => {
@@ -123,7 +121,7 @@ export default function FilterPanel({
       {/* APERTURA */}
       <div className="filter-group">
         <label className="filter-label">{t('filters.opening')}</label>
-        <select className="filter-select" style={{ background: ITEM_BG }} value={filters.opening}
+        <select className="filter-select" style={{ background: 'var(--color-item-bg)' }} value={filters.opening}
           onChange={e => setFilters({ ...filters, opening: e.target.value })}>
           <option value="all">{t('filters.allOpenings')}</option>
           {openingsAvailable.map(op => {
@@ -162,9 +160,9 @@ export default function FilterPanel({
           )}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <input type="date" className="filter-select" style={{ background: ITEM_BG }}
+          <input type="date" className="filter-select" style={{ background: 'var(--color-item-bg)' }}
             value={filters.dateFrom} onChange={e => setFilters({ ...filters, dateFrom: e.target.value })} />
-          <input type="date" className="filter-select" style={{ background: ITEM_BG }}
+          <input type="date" className="filter-select" style={{ background: 'var(--color-item-bg)' }}
             value={filters.dateTo} onChange={e => setFilters({ ...filters, dateTo: e.target.value })} />
         </div>
       </div>

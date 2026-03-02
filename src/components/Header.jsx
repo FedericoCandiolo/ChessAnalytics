@@ -1,8 +1,33 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
-import { ELO_COLORS } from '../constants';
-import { FileDown } from 'lucide-react';
+import { FileDown, Moon, Sun } from 'lucide-react';
+
+const THEMES = [
+  { key: 'dark',         icon: <Moon size={11} /> },
+  { key: 'light',        icon: <Sun size={11} /> },
+  { key: 'deuteranopia', icon: 'D' },
+  { key: 'protanopia',   icon: 'P' },
+  { key: 'tritanopia',   icon: 'T' },
+];
+
+function ThemeSwitcher({ theme, onThemeChange }) {
+  const { t } = useTranslation();
+  return (
+    <div className="theme-switcher">
+      {THEMES.map(th => (
+        <button
+          key={th.key}
+          className={`theme-btn${theme === th.key ? ' active' : ''}`}
+          onClick={() => onThemeChange(th.key)}
+          title={t(`themes.${th.key}`, th.key)}
+        >
+          {th.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function LangSwitcher() {
   const lang = i18n.language;
@@ -15,9 +40,9 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, username, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory }) {
+export default function Header({ currentElo, gamesCount, username, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory, theme, onThemeChange }) {
   const { t } = useTranslation();
-  const modeColor = ELO_COLORS[mainTimeClass] || '#01B6FF';
+  const modeColor = mainTimeClass ? `var(--color-${mainTimeClass})` : 'var(--color-accent-blue)';
   const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
   const modeMaxElo = mainTimeClass ? (maxEloByMode?.[mainTimeClass] ?? '---') : '---';
 
@@ -37,11 +62,11 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
             </span>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline' }}>
               <div style={{ textAlign: 'center' }}>
-                <span style={{ fontSize: '0.5rem', color: '#94a3b8', display: 'block' }}>{t('header.currentElo')}</span>
+                <span style={{ fontSize: '0.5rem', color: 'var(--color-text-secondary)', display: 'block' }}>{t('header.currentElo')}</span>
                 <span style={{ color: modeColor, fontWeight: 'bold', fontSize: '1rem' }}>{modeCurrentElo}</span>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <span style={{ fontSize: '0.5rem', color: '#94a3b8', display: 'block' }}>{t('header.maxElo')}</span>
+                <span style={{ fontSize: '0.5rem', color: 'var(--color-text-secondary)', display: 'block' }}>{t('header.maxElo')}</span>
                 <span style={{ color: modeColor, fontWeight: '600', fontSize: '0.85rem', opacity: 0.8 }}>{modeMaxElo}</span>
               </div>
             </div>
@@ -50,25 +75,25 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
 
         <div className="kpi-box" style={{ textAlign: 'right' }}>
           <span style={{ fontSize: '0.55rem', opacity: 0.7, display: 'block', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{t('header.games')}</span>
-          <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff' }}>{gamesCount}</div>
+          <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--color-text-primary)' }}>{gamesCount}</div>
         </div>
 
-        <div style={{ borderLeft: '1px solid #334155', paddingLeft: '0.7rem' }}>
-          <span style={{ fontSize: '0.65rem', color: '#94a3b8', display: 'block', marginBottom: '0.2rem' }}>
+        <div style={{ borderLeft: '1px solid var(--color-border-subtle)', paddingLeft: '0.7rem' }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '0.2rem' }}>
             {t('header.analyzePlayer')}:
           </span>
           <input className="search-input" placeholder={t('header.playerPlaceholder')}
             defaultValue={username}
             onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())} />
           {/* History range toggle */}
-          <div style={{ display: 'flex', gap: 0, marginTop: '0.25rem', background: '#0f172a', borderRadius: '5px', padding: '2px' }}>
+          <div style={{ display: 'flex', gap: 0, marginTop: '0.25rem', background: 'var(--color-bg-dark)', borderRadius: '5px', padding: '2px' }}>
             <button
               onClick={() => onToggleHistory(false)}
               style={{
                 flex: 1, padding: '2px 6px', borderRadius: '3px', border: 'none', cursor: 'pointer',
                 fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', transition: 'all 0.15s',
-                background: !fullHistory ? '#334155' : 'transparent',
-                color: !fullHistory ? '#e2e8f0' : '#475569',
+                background: !fullHistory ? 'var(--color-item-bg)' : 'transparent',
+                color: !fullHistory ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
               }}
             >{t('header.recent')}</button>
             <button
@@ -76,13 +101,14 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
               style={{
                 flex: 1, padding: '2px 6px', borderRadius: '3px', border: 'none', cursor: 'pointer',
                 fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', transition: 'all 0.15s',
-                background: fullHistory ? '#334155' : 'transparent',
-                color: fullHistory ? '#e2e8f0' : '#475569',
+                background: fullHistory ? 'var(--color-item-bg)' : 'transparent',
+                color: fullHistory ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
               }}
             >{t('header.fullHistory')}</button>
           </div>
         </div>
 
+        <ThemeSwitcher theme={theme} onThemeChange={onThemeChange} />
         <LangSwitcher />
 
         {/* PDF Export button */}

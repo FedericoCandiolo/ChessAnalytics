@@ -7,7 +7,7 @@ import { ELO_COLORS } from '../constants';
 
 const TC_KEYS = ['bullet', 'blitz', 'rapid', 'daily'];
 
-export default function MonthlyTrendChart({ data }) {
+export default function MonthlyTrendChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -32,6 +32,12 @@ export default function MonthlyTrendChart({ data }) {
       if (!width || !height) return;
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN   = cs.getPropertyValue('--color-win').trim()  || '#00FF9C';
+      const CTEXT = cs.getPropertyValue('--chart-text').trim() || '#94a3b8';
+      const CGRID = cs.getPropertyValue('--chart-grid').trim() || '#2d333f';
+      const getTC = tc => cs.getPropertyValue(`--color-${tc}`).trim() || ELO_COLORS[tc];
+
       // Which time classes actually appear in data?
       const activeTCs = TC_KEYS.filter(tc => data.some(d => d[tc] > 0));
       const stackKeys = activeTCs.length > 0 ? activeTCs : TC_KEYS;
@@ -53,7 +59,7 @@ export default function MonthlyTrendChart({ data }) {
 
       stack.forEach(layer => {
         const tc    = layer.key;
-        const color = ELO_COLORS[tc] || '#94a3b8';
+        const color = getTC(tc) || '#94a3b8';
 
         g.selectAll(`.bar-${tc}`)
           .data(layer)
@@ -70,7 +76,7 @@ export default function MonthlyTrendChart({ data }) {
             const md = d.data;
             const lines = stackKeys
               .filter(k => md[k] > 0)
-              .map(k => `<span style="color:${ELO_COLORS[k]}">${t(`timeClasses.${k}`, k)}: ${md[k]}</span>`)
+              .map(k => `<span style="color:${getTC(k)}">${t(`timeClasses.${k}`, k)}: ${md[k]}</span>`)
               .join('<br/>');
             tt.html(
               `<strong>${md.label}</strong><br/>` +
@@ -92,28 +98,28 @@ export default function MonthlyTrendChart({ data }) {
       const line = d3.line().x(d => xBar(d.label) + xBar.bandwidth() / 2).y(d => yLeft(d.winRate)).curve(d3.curveMonotoneX);
       const area = d3.area().x(d => xBar(d.label) + xBar.bandwidth() / 2).y0(iH).y1(d => yLeft(d.winRate)).curve(d3.curveMonotoneX);
 
-      g.append('path').datum(data).attr('fill', '#00FF9C').attr('opacity', 0.08).attr('d', area);
-      const linePath = g.append('path').datum(data).attr('fill', 'none').attr('stroke', '#00FF9C').attr('stroke-width', 2).attr('d', line);
+      g.append('path').datum(data).attr('fill', WIN).attr('opacity', 0.08).attr('d', area);
+      const linePath = g.append('path').datum(data).attr('fill', 'none').attr('stroke', WIN).attr('stroke-width', 2).attr('d', line);
       const lineLen = linePath.node().getTotalLength();
       linePath.attr('stroke-dasharray', lineLen).attr('stroke-dashoffset', lineLen)
         .transition().duration(800).delay(300).ease(d3.easeCubicOut).attr('stroke-dashoffset', 0);
 
       g.selectAll('.dot').data(data).join('circle').attr('class', 'dot')
         .attr('cx', d => xBar(d.label) + xBar.bandwidth() / 2).attr('cy', d => yLeft(d.winRate))
-        .attr('r', 3).attr('fill', '#00FF9C').attr('opacity', 0)
+        .attr('r', 3).attr('fill', WIN).attr('opacity', 0)
         .transition().delay(800).attr('opacity', 1);
 
       // ── Axes ────────────────────────────────────────────────────────────
       const skip = Math.max(1, Math.ceil(data.length / 8));
       g.append('g').attr('transform', `translate(0,${iH})`)
         .call(d3.axisBottom(xBar).tickValues(data.filter((_, i) => i % skip === 0).map(d => d.label)))
-        .selectAll('text').style('font-size', '10px').style('fill', '#94a3b8').attr('transform', 'rotate(-25)').attr('text-anchor', 'end');
+        .selectAll('text').style('font-size', '10px').style('fill', CTEXT).attr('transform', 'rotate(-25)').attr('text-anchor', 'end');
       g.append('g').call(d3.axisLeft(yLeft).ticks(4).tickFormat(d => `${d}%`))
-        .selectAll('text').style('font-size', '10px').style('fill', '#00FF9C');
+        .selectAll('text').style('font-size', '10px').style('fill', WIN);
       g.append('g').attr('transform', `translate(${iW},0)`)
         .call(d3.axisRight(yRight).ticks(4))
-        .selectAll('text').style('font-size', '10px').style('fill', '#94a3b8');
-      g.selectAll('.domain').style('stroke', '#334155');
+        .selectAll('text').style('font-size', '10px').style('fill', CTEXT);
+      g.selectAll('.domain').style('stroke', CGRID);
 
       // ── Legend ──────────────────────────────────────────────────────────
       if (activeTCs.length > 0) {
@@ -122,9 +128,9 @@ export default function MonthlyTrendChart({ data }) {
         activeTCs.forEach((tc, i) => {
           const lx = (iW / 2) - (activeTCs.length * itemW / 2) + i * itemW;
           legG.append('rect').attr('x', lx).attr('y', 0).attr('width', 10).attr('height', 8)
-            .attr('rx', 2).attr('fill', ELO_COLORS[tc]).attr('opacity', 0.75);
+            .attr('rx', 2).attr('fill', getTC(tc)).attr('opacity', 0.75);
           legG.append('text').attr('x', lx + 13).attr('y', 8)
-            .style('font-size', '9px').style('fill', '#94a3b8')
+            .style('font-size', '9px').style('fill', CTEXT)
             .text(t(`timeClasses.${tc}`, tc));
         });
       }
@@ -134,7 +140,7 @@ export default function MonthlyTrendChart({ data }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   return (
     <>

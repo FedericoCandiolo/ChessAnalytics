@@ -11,7 +11,7 @@ const MARGIN_LEFT = 40;
 const MARGIN_TOP = 22;
 const YEAR_PADDING = 28; // vertical space between years (label + gap)
 
-export default function CalendarChart({ data }) {
+export default function CalendarChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -46,16 +46,22 @@ export default function CalendarChart({ data }) {
     const draw = () => {
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN    = cs.getPropertyValue('--color-win').trim()    || '#00FF9C';
+      const DRAW   = cs.getPropertyValue('--color-draw').trim()   || '#FFF301';
+      const LOSS   = cs.getPropertyValue('--color-loss').trim()   || '#FF0101';
+      const CEMPTY = cs.getPropertyValue('--chart-empty').trim()  || '#1e2533';
+
       // ---- Color scale ----
       const playedDays = data.filter(d => d.wins + d.losses + d.draws > 0);
       const maxAbs = Math.max(1, d3.max(playedDays, d => Math.abs(d.net)) || 1);
       const colorScale = d3.scaleLinear()
         .domain([-maxAbs, 0, maxAbs])
-        .range(['#FF0101', '#FFF301', '#00FF9C'])
+        .range([LOSS, DRAW, WIN])
         .clamp(true);
 
       const cellFill = (d) =>
-        (d.wins + d.losses + d.draws === 0) ? '#1e2533' : colorScale(d.net);
+        (d.wins + d.losses + d.draws === 0) ? CEMPTY : colorScale(d.net);
 
       // ---- Parse dates and group by year ----
       const byYear = d3.group(data, d => +d.date.slice(0, 4));
@@ -184,14 +190,14 @@ export default function CalendarChart({ data }) {
                 const total = dayData.wins + dayData.losses + dayData.draws;
                 if (total === 0) return;
                 const netDisplay = dayData.net > 0 ? `+${dayData.net}` : `${dayData.net}`;
-                const netColor = dayData.net > 0 ? '#00FF9C' : dayData.net < 0 ? '#FF0101' : '#FFF301';
+                const netColor = dayData.net > 0 ? WIN : dayData.net < 0 ? LOSS : DRAW;
                 const formattedDate = d3.timeFormat('%B %d, %Y')(new Date(dateStr + 'T12:00:00'));
                 tt.html(
                   `<strong style="color:#E5E7E9;display:block;margin-bottom:4px">${formattedDate}</strong>` +
                   `<span style="color:#94a3b8">${t('charts.gamesLabel')}: <strong style="color:#E5E7E9">${total}</strong></span><br/>` +
-                  `<span style="color:#00FF9C">▮ ${t('results.wins')}: ${dayData.wins}</span><br/>` +
-                  `<span style="color:#FFF301">▮ ${t('results.drawsLabel')}: ${dayData.draws}</span><br/>` +
-                  `<span style="color:#FF0101">▮ ${t('results.losses')}: ${dayData.losses}</span><br/>` +
+                  `<span style="color:${WIN}">▮ ${t('results.wins')}: ${dayData.wins}</span><br/>` +
+                  `<span style="color:${DRAW}">▮ ${t('results.drawsLabel')}: ${dayData.draws}</span><br/>` +
+                  `<span style="color:${LOSS}">▮ ${t('results.losses')}: ${dayData.losses}</span><br/>` +
                   `<hr style="border:none;border-top:1px solid #2d333f;margin:5px 0"/>` +
                   `<span style="color:#94a3b8">${t('charts.netScore')}: <strong style="color:${netColor}">${netDisplay}</strong></span>`
                 )
@@ -218,9 +224,9 @@ export default function CalendarChart({ data }) {
       const grad = defs.append('linearGradient')
         .attr('id', gradId)
         .attr('x1', '0%').attr('x2', '100%');
-      grad.append('stop').attr('offset', '0%').attr('stop-color', '#FF0101');
-      grad.append('stop').attr('offset', '50%').attr('stop-color', '#FFF301');
-      grad.append('stop').attr('offset', '100%').attr('stop-color', '#00FF9C');
+      grad.append('stop').attr('offset', '0%').attr('stop-color', LOSS);
+      grad.append('stop').attr('offset', '50%').attr('stop-color', DRAW);
+      grad.append('stop').attr('offset', '100%').attr('stop-color', WIN);
 
       const barW = Math.min(200, MAX_WEEKS * STEP - 60);
       legendG.append('rect')
@@ -251,7 +257,7 @@ export default function CalendarChart({ data }) {
       ro.disconnect();
       d3.select(container).selectAll('*').remove();
     };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   const isEmpty = !data || data.length === 0;
 

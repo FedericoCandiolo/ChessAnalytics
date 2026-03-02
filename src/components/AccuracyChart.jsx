@@ -4,12 +4,7 @@ import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, X } from 'lucide-react';
 
-const BUCKET_COLORS = {
-  '<50': '#ef4444', '50-59': '#f97316', '60-69': '#eab308',
-  '70-79': '#84cc16', '80-89': '#22c55e', '90+': '#00FF9C'
-};
-
-export default function AccuracyChart({ data }) {
+export default function AccuracyChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -34,6 +29,17 @@ export default function AccuracyChart({ data }) {
       if (!width || !height) return;
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const CTEXT = cs.getPropertyValue('--chart-text').trim()  || '#94a3b8';
+      const CGRID = cs.getPropertyValue('--chart-grid').trim()  || '#2d333f';
+      const WIN   = cs.getPropertyValue('--color-win').trim()   || '#00FF9C';
+      const DRAW  = cs.getPropertyValue('--color-draw').trim()  || '#FFF301';
+      const LOSS  = cs.getPropertyValue('--color-loss').trim()  || '#FF0101';
+      const bucketColor = d3.scaleLinear()
+        .domain([0, (data.length - 1) / 2, data.length - 1])
+        .range([LOSS, DRAW, WIN])
+        .interpolate(d3.interpolateRgb);
+
       const ml = 30, mr = 10, mt = 8, mb = 28;
       const iW = width - ml - mr, iH = height - mt - mb;
       const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
@@ -44,19 +50,19 @@ export default function AccuracyChart({ data }) {
       const y = d3.scaleLinear().domain([0, d3.max(data, d => d.count) * 1.15]).range([iH, 0]);
 
       g.append('g').attr('class', 'grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(4))
-        .selectAll('line').style('stroke', '#2d333f').style('stroke-dasharray', '3,3');
+        .selectAll('line').style('stroke', CGRID).style('stroke-dasharray', '3,3');
       g.select('.grid .domain').remove();
 
       g.append('g').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x))
-        .selectAll('text').style('font-size', '10px').style('fill', '#94a3b8');
+        .selectAll('text').style('font-size', '10px').style('fill', CTEXT);
       g.append('g').call(d3.axisLeft(y).ticks(4).tickFormat(d => d))
-        .selectAll('text').style('font-size', '10px').style('fill', '#94a3b8');
+        .selectAll('text').style('font-size', '10px').style('fill', CTEXT);
       g.select('.domain').remove();
 
       g.selectAll('rect').data(data).join('rect')
         .attr('x', d => x(d.bucket)).attr('y', iH)
         .attr('width', x.bandwidth()).attr('height', 0)
-        .attr('fill', d => BUCKET_COLORS[d.bucket] || '#01B6FF').attr('rx', 3)
+        .attr('fill', (_, i) => bucketColor(i)).attr('rx', 3)
         .style('cursor', 'pointer')
         .on('mouseover', (event, d) => {
           tt.html(`<strong>${d.bucket}%</strong>: ${d.count} ${t('charts.gamesLabel')}`)
@@ -72,11 +78,11 @@ export default function AccuracyChart({ data }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, hasData, t]);
+  }, [data, hasData, t, theme]);
 
   const inner = hasData
     ? <div ref={containerRef} style={{ flex: 1, minHeight: 0 }} />
-    : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '1.25rem' }}>
+    : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textAlign: 'center', padding: '1.25rem' }}>
         {t('charts.noAccuracyData')}
       </div>;
 

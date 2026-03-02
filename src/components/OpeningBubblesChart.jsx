@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { FAMILY_COLORS, FAMILY_LETTER } from '../constants';
 import { Maximize2, X } from 'lucide-react';
 
-export default function OpeningBubblesChart({ data }) {
+export default function OpeningBubblesChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -68,11 +68,16 @@ export default function OpeningBubblesChart({ data }) {
 
       const defs = svg.append('defs');
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN  = cs.getPropertyValue('--color-win').trim()  || '#00FF9C';
+      const DRAW = cs.getPropertyValue('--color-draw').trim() || '#FFF301';
+      const LOSS = cs.getPropertyValue('--color-loss').trim() || '#FF0101';
+
       // Fill color scale: red → yellow → green
       const maxAbs = Math.max(1, d3.max(data, d => Math.abs(d.netScore)));
       const fillColor = d3.scaleLinear()
         .domain([-maxAbs, 0, maxAbs])
-        .range(['#FF0101', '#FFF301', '#00FF9C'])
+        .range([LOSS, DRAW, WIN])
         .clamp(true);
 
       // Radius function
@@ -127,9 +132,9 @@ export default function OpeningBubblesChart({ data }) {
             `<strong style="color:#E5E7E9;display:block;margin-bottom:4px">${d.name}</strong>` +
             `<span style="color:#64748b;font-size:10px">${familyLabel}</span>` +
             `<hr style="border:none;border-top:1px solid #2d333f;margin:5px 0"/>` +
-            `<span style="color:#00FF9C">▮ ${t('results.wins')}: ${d.victoria} (${wp}%)</span><br/>` +
-            `<span style="color:#FFF301">▮ ${t('results.drawsLabel')}: ${d.tablas} (${dp}%)</span><br/>` +
-            `<span style="color:#FF0101">▮ ${t('results.losses')}: ${d.derrota} (${lp}%)</span><br/>` +
+            `<span style="color:${WIN}">▮ ${t('results.wins')}: ${d.victoria} (${wp}%)</span><br/>` +
+            `<span style="color:${DRAW}">▮ ${t('results.drawsLabel')}: ${d.tablas} (${dp}%)</span><br/>` +
+            `<span style="color:${LOSS}">▮ ${t('results.losses')}: ${d.derrota} (${lp}%)</span><br/>` +
             `<span style="color:#94a3b8">${t('charts.gamesLabel')}: <strong style="color:#E5E7E9">${d.total}</strong></span><br/>` +
             `<span style="color:#94a3b8">${t('charts.netScore')}: <strong style="color:${fillColor(d.netScore)}">${netDisplay}</strong></span>`
           )
@@ -218,9 +223,9 @@ export default function OpeningBubblesChart({ data }) {
       const grad = defs.append('linearGradient')
         .attr('id', gradId)
         .attr('x1', '0%').attr('x2', '100%');
-      grad.append('stop').attr('offset', '0%').attr('stop-color', '#FF0101');
-      grad.append('stop').attr('offset', '50%').attr('stop-color', '#FFF301');
-      grad.append('stop').attr('offset', '100%').attr('stop-color', '#00FF9C');
+      grad.append('stop').attr('offset', '0%').attr('stop-color', LOSS);
+      grad.append('stop').attr('offset', '50%').attr('stop-color', DRAW);
+      grad.append('stop').attr('offset', '100%').attr('stop-color', WIN);
 
       legG.append('rect')
         .attr('x', barX)
@@ -264,7 +269,7 @@ export default function OpeningBubblesChart({ data }) {
       }
       d3.select(container).selectAll('*').remove();
     };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   const emptyState = !data || data.length === 0;
 

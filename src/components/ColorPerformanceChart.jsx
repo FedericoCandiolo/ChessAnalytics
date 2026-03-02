@@ -2,12 +2,11 @@ import React, { useRef, useEffect, useState } from 'react';
 
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
-import { RESULT_COLORS } from '../constants';
 import { Maximize2, X } from 'lucide-react';
 
 const KEYS = ['victoria', 'tablas', 'derrota'];
 
-export default function ColorPerformanceChart({ data }) {
+export default function ColorPerformanceChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -31,6 +30,13 @@ export default function ColorPerformanceChart({ data }) {
       if (!width || !height) return;
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN   = cs.getPropertyValue('--color-win').trim()   || '#00FF9C';
+      const DRAW  = cs.getPropertyValue('--color-draw').trim()  || '#FFF301';
+      const LOSS  = cs.getPropertyValue('--color-loss').trim()  || '#FF0101';
+      const CTEXT = cs.getPropertyValue('--chart-text').trim()  || '#94a3b8';
+      const CGRID = cs.getPropertyValue('--chart-grid').trim()  || '#2d333f';
+
       const ml = 35, mr = 10, mt = 8, mb = 50;
       const iW = width - ml - mr, iH = height - mt - mb;
       const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
@@ -42,17 +48,17 @@ export default function ColorPerformanceChart({ data }) {
       const x = d3.scaleBand().domain(chartData.map(d => d.label)).range([0, iW]).padding(0.4);
       const y = d3.scaleLinear().domain([0, maxVal * 1.1]).range([iH, 0]);
       const stack = d3.stack().keys(KEYS);
-      const colors = [RESULT_COLORS.win, RESULT_COLORS.draw, RESULT_COLORS.loss];
+      const colors = [WIN, DRAW, LOSS];
       const names = [t('results.wins'), t('results.drawsLabel'), t('results.losses')];
 
       g.append('g').attr('class', 'grid').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(4))
-        .selectAll('line').style('stroke', '#2d333f').style('stroke-dasharray', '3,3');
+        .selectAll('line').style('stroke', CGRID).style('stroke-dasharray', '3,3');
       g.select('.grid .domain').remove();
 
       g.append('g').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x))
-        .selectAll('text').style('font-size', '12px').style('fill', '#94a3b8');
+        .selectAll('text').style('font-size', '12px').style('fill', CTEXT);
       g.append('g').call(d3.axisLeft(y).ticks(4))
-        .selectAll('text').style('font-size', '10px').style('fill', '#94a3b8');
+        .selectAll('text').style('font-size', '10px').style('fill', CTEXT);
       g.select('.domain').remove();
 
       stack(chartData).forEach((layer, li) => {
@@ -64,9 +70,9 @@ export default function ColorPerformanceChart({ data }) {
           .style('cursor', 'pointer')
           .on('mouseover', (event, d) => {
             tt.html(`<strong>${d.data.label}</strong><br/>
-              <span style="color:${RESULT_COLORS.win}">${t('results.wins')}: ${d.data.victoria}</span><br/>
-              <span style="color:${RESULT_COLORS.draw}">${t('results.drawsLabel')}: ${d.data.tablas}</span><br/>
-              <span style="color:${RESULT_COLORS.loss}">${t('results.losses')}: ${d.data.derrota}</span>`)
+              <span style="color:${WIN}">${t('results.wins')}: ${d.data.victoria}</span><br/>
+              <span style="color:${DRAW}">${t('results.drawsLabel')}: ${d.data.tablas}</span><br/>
+              <span style="color:${LOSS}">${t('results.losses')}: ${d.data.derrota}</span>`)
               .style('opacity', '1').style('left', `${event.clientX + 12}px`).style('top', `${event.clientY - 8}px`);
           })
           .on('mousemove', (event) => tt.style('left', `${event.clientX + 12}px`).style('top', `${event.clientY - 8}px`))
@@ -79,7 +85,7 @@ export default function ColorPerformanceChart({ data }) {
       KEYS.forEach((k, i) => {
         const lx = i * 80;
         legG.append('rect').attr('x', lx).attr('y', -14).attr('width', 9).attr('height', 9).attr('fill', colors[i]).attr('rx', 2);
-        legG.append('text').attr('x', lx + 13).attr('y', -6).style('font-size', '10px').style('fill', '#94a3b8').text(names[i]);
+        legG.append('text').attr('x', lx + 13).attr('y', -6).style('font-size', '10px').style('fill', CTEXT).text(names[i]);
       });
     };
 
@@ -87,7 +93,7 @@ export default function ColorPerformanceChart({ data }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   return (
     <>

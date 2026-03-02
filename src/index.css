@@ -11,10 +11,86 @@
   --color-neutral:        #FFF301;
   --color-danger:         #FF0101;
   --color-accent-blue:    #01B6FF;
+  /* Chart result colors (theme-aware) */
+  --color-win:   #00FF9C;
+  --color-draw:  #FFF301;
+  --color-loss:  #FF0101;
+  /* Time class colors (theme-aware) */
+  --color-rapid:  #10b981;
+  --color-blitz:  #f59e0b;
+  --color-bullet: #ef4444;
+  --color-daily:  #a855f7;
+  --chart-text:  #94a3b8;
+  --chart-subtext: #64748b;
+  --chart-grid:  #2d333f;
+  --chart-empty: #1e2533;
   --header-h:  5rem;
   --footer-h:  2.25rem;
   --nav-h:     2.5rem;
   --avail: calc(100vh - var(--header-h) - var(--footer-h) - 1.5rem);
+}
+
+/* ─── Themes ─────────────────────────────────────── */
+.theme-dark { /* inherits :root — no overrides */ }
+
+.theme-light {
+  --color-bg-dark:        #f1f5f9;
+  --color-card:           #ffffff;
+  --color-item-bg:        #e2e8f0;
+  --color-border:         #cbd5e1;
+  --color-border-subtle:  #94a3b8;
+  --color-text-primary:   #0f172a;
+  --color-text-secondary: #475569;
+  --color-success:        #059669;
+  --color-neutral:        #ca8a04;
+  --color-danger:         #dc2626;
+  --color-win:    #059669;
+  --color-draw:   #ca8a04;
+  --color-loss:   #dc2626;
+  --color-rapid:  #047857;
+  --color-blitz:  #b45309;
+  --color-bullet: #b91c1c;
+  --color-daily:  #6d28d9;
+  --chart-text:  #475569;
+  --chart-subtext: #64748b;
+  --chart-grid:  #cbd5e1;
+  --chart-empty: #e2e8f0;
+}
+
+.theme-deuteranopia {
+  --color-win:    #0077BB;
+  --color-draw:   #EE7733;
+  --color-loss:   #AA3377;
+  --color-success: #0077BB;
+  /* TC colors: avoid red/green confusion */
+  --color-rapid:  #60a5fa;
+  --color-blitz:  #fbbf24;
+  --color-bullet: #f472b6;
+  --color-daily:  #2dd4bf;
+}
+
+.theme-protanopia {
+  --color-win:    #004488;
+  --color-draw:   #DDAA33;
+  --color-loss:   #BB5566;
+  --color-success: #004488;
+  /* TC colors: avoid red confusion */
+  --color-rapid:  #10b981;
+  --color-blitz:  #fbbf24;
+  --color-bullet: #60a5fa;
+  --color-daily:  #f472b6;
+}
+
+.theme-tritanopia {
+  --color-win:    #009988;
+  --color-draw:   #EE99AA;
+  --color-loss:   #CC3311;
+  --color-success: #009988;
+  /* TC colors: avoid blue/yellow confusion */
+  --color-rapid:  #10b981;
+  --color-blitz:  #f97316;
+  --color-bullet: #ef4444;
+  --color-daily:  #ec4899;
 }
 
 /* ─── Base ───────────────────────────────────────── */
@@ -213,7 +289,7 @@ h3 { margin-top: 0; }
 .search-input {
   background: var(--color-bg-dark);
   border: 1px solid var(--color-border-subtle);
-  color: white;
+  color: var(--color-text-primary);
   padding: 0.375rem 0.625rem;
   border-radius: 0.375rem;
   outline: none;
@@ -260,6 +336,37 @@ input[type="date"].filter-select::-webkit-calendar-picker-indicator {
   padding: 0.125rem 0.375rem;
   border-radius: 0.625rem;
   margin-left: 0.3rem;
+}
+
+/* ─── Theme switcher ─────────────────────────────── */
+.theme-switcher {
+  display: flex;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.theme-btn {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  padding: 0.28rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.theme-btn.active {
+  background: var(--color-accent-blue);
+  color: #000;
+}
+.theme-btn:not(.active):hover {
+  background: var(--color-item-bg);
+  color: var(--color-text-primary);
 }
 
 /* ─── Language segmented control ────────────────── */

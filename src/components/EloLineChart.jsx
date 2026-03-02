@@ -7,7 +7,7 @@ import { Maximize2, X } from 'lucide-react';
 
 const TIME_CLASSES = ['rapid', 'blitz', 'bullet', 'daily'];
 
-export default function EloLineChart({ data }) {
+export default function EloLineChart({ data, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -31,6 +31,13 @@ export default function EloLineChart({ data }) {
       const { width, height } = container.getBoundingClientRect();
       if (!width || !height) return;
       d3.select(container).selectAll('*').remove();
+
+      const cs = getComputedStyle(document.documentElement);
+      const CTEXT = cs.getPropertyValue('--chart-text').trim()    || '#94a3b8';
+      const CSUB  = cs.getPropertyValue('--chart-subtext').trim() || '#64748b';
+      const CGRID = cs.getPropertyValue('--chart-grid').trim()    || '#2d333f';
+      const CARD  = cs.getPropertyValue('--color-card').trim()    || '#161a23';
+      const getTC = tc => cs.getPropertyValue(`--color-${tc}`).trim() || ELO_COLORS[tc];
 
       const ml = 46, mr = 14, mt = 16, mb = 42;
       const iW = width - ml - mr;
@@ -61,22 +68,22 @@ export default function EloLineChart({ data }) {
 
       // Grid
       g.append('g').call(d3.axisLeft(y).tickSize(-iW).tickFormat('').ticks(5))
-        .selectAll('line').style('stroke', '#1e2533').style('stroke-dasharray', '2,4');
+        .selectAll('line').style('stroke', CGRID).style('stroke-dasharray', '2,4');
       g.select('.domain').remove();
 
       // Axes
       g.append('g').attr('transform', `translate(0,${iH})`).call(
         d3.axisBottom(x).ticks(width < 500 ? 4 : 6).tickFormat(d3.timeFormat('%b %y'))
-      ).selectAll('text').style('font-size', '10px').style('fill', '#64748b');
+      ).selectAll('text').style('font-size', '10px').style('fill', CSUB);
       g.append('g').call(d3.axisLeft(y).ticks(5))
-        .selectAll('text').style('font-size', '10px').style('fill', '#64748b');
-      g.selectAll('.domain').style('stroke', '#2d333f');
+        .selectAll('text').style('font-size', '10px').style('fill', CSUB);
+      g.selectAll('.domain').style('stroke', CGRID);
 
       // Lines + bands per TC
       presentTCs.forEach(tc => {
         const tcData = tcArrays[tc];
         if (tcData.length === 0) return;
-        const col = ELO_COLORS[tc];
+        const col = getTC(tc);
 
         // Min-max band (if we have band data)
         const hasBand = tcData.some(d => d[`${tc}_min`] !== undefined);
@@ -103,13 +110,13 @@ export default function EloLineChart({ data }) {
         // Dots
         g.selectAll(`.dot-${tc}`).data(tcData).join('circle').attr('class', `dot-${tc}`)
           .attr('cx', d => x(toDate(d))).attr('cy', d => y(d[tc]))
-          .attr('r', 3).attr('fill', col).attr('stroke', '#0a0b0e').attr('stroke-width', 1.5)
+          .attr('r', 3).attr('fill', col).attr('stroke', CARD).attr('stroke-width', 1.5)
           .attr('opacity', 0).transition().delay(900).attr('opacity', 1);
       });
 
       // Crosshair + tooltip
       const crossV = g.append('line').attr('y1', 0).attr('y2', iH)
-        .attr('stroke', '#475569').attr('stroke-width', 1).attr('stroke-dasharray', '3,3').attr('opacity', 0);
+        .attr('stroke', CSUB).attr('stroke-width', 1).attr('stroke-dasharray', '3,3').attr('opacity', 0);
 
       const bisect = d3.bisector(toDate).left;
 
@@ -134,28 +141,28 @@ export default function EloLineChart({ data }) {
             if (dist < closestDist) { closestDist = dist; closestTC = tc; }
           });
 
-          let html = `<span style="font-size:11px;color:#64748b;">${d.name}</span>`;
+          let html = `<span style="font-size:11px;color:${CSUB};">${d.name}</span>`;
           if (closestTC && d[closestTC] !== undefined) {
             const s   = modeStats[closestTC];
-            const col = ELO_COLORS[closestTC];
+            const col = getTC(closestTC);
             const mn  = d[`${closestTC}_min`];
             const mx2 = d[`${closestTC}_max`];
-            html += `<hr style="border:none;border-top:1px solid #2d333f;margin:5px 0;"/>
+            html += `<hr style="border:none;border-top:1px solid ${CGRID};margin:5px 0;"/>
               <span style="color:${col};font-weight:700;font-size:13px;">
                 ${t(`timeClasses.${closestTC}`, closestTC)}: ${d[closestTC]}
               </span>`;
             if (mn !== undefined && mx2 !== undefined && mn !== mx2) {
-              html += `<br/><span style="font-size:10px;color:#64748b;">⬇ ${mn} · ⬆ ${mx2}</span>`;
+              html += `<br/><span style="font-size:10px;color:${CSUB};">⬇ ${mn} · ⬆ ${mx2}</span>`;
             }
-            html += `<br/><span style="font-size:10px;color:#94a3b8;">
+            html += `<br/><span style="font-size:10px;color:${CTEXT};">
               ↓ min ${s.min} &nbsp;·&nbsp; ↑ max ${s.max} &nbsp;·&nbsp; → ${s.final}
             </span>`;
           }
           const others = presentTCs.filter(tc => tc !== closestTC && d[tc] !== undefined);
           if (others.length) {
-            html += `<hr style="border:none;border-top:1px solid #2d333f;margin:5px 0;"/>`;
+            html += `<hr style="border:none;border-top:1px solid ${CGRID};margin:5px 0;"/>`;
             others.forEach(tc => {
-              html += `<span style="color:${ELO_COLORS[tc]};font-size:11px;">${t(`timeClasses.${tc}`, tc)}: ${d[tc]}</span><br/>`;
+              html += `<span style="color:${getTC(tc)};font-size:11px;">${t(`timeClasses.${tc}`, tc)}: ${d[tc]}</span><br/>`;
             });
           }
 
@@ -169,9 +176,9 @@ export default function EloLineChart({ data }) {
       presentTCs.forEach((tc, i) => {
         const lx = i * 85;
         legG.append('line').attr('x1', lx).attr('x2', lx + 14).attr('y1', -12).attr('y2', -12)
-          .attr('stroke', ELO_COLORS[tc]).attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
-        legG.append('circle').attr('cx', lx + 7).attr('cy', -12).attr('r', 3).attr('fill', ELO_COLORS[tc]);
-        legG.append('text').attr('x', lx + 19).attr('y', -8).style('font-size', '10px').style('fill', '#94a3b8')
+          .attr('stroke', getTC(tc)).attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+        legG.append('circle').attr('cx', lx + 7).attr('cy', -12).attr('r', 3).attr('fill', getTC(tc));
+        legG.append('text').attr('x', lx + 19).attr('y', -8).style('font-size', '10px').style('fill', CTEXT)
           .text(t(`timeClasses.${tc}`, tc));
       });
     };
@@ -180,7 +187,7 @@ export default function EloLineChart({ data }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, t]);
+  }, [data, t, theme]);
 
   return (
     <>

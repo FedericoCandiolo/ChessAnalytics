@@ -27,6 +27,18 @@ function App() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
 
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('chess-theme') || 'dark';
+    document.documentElement.className = `theme-${saved}`;
+    return saved;
+  });
+
+  const changeTheme = (newTheme) => {
+    document.documentElement.className = `theme-${newTheme}`;
+    localStorage.setItem('chess-theme', newTheme);
+    setTheme(newTheme);
+  };
+
   // Layout detection: desktop (≥1100px), portrait (h > w), mobile landscape (default)
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1100);
   const [isPortrait, setIsPortrait] = useState(() => window.innerHeight > window.innerWidth);
@@ -73,14 +85,14 @@ function App() {
   };
 
   // ── Chart elements ───────────────────────────────────────────────────────
-  const pieChart      = <ResultsPieChart data={stats.pie} winRate={stats.winRate} />;
-  const openingsChart = <OpeningsBarChart data={stats.stackedOpenings} />;
-  const eloChart      = <EloLineChart data={stats.elo} />;
-  const accChart      = <AccuracyChart data={stats.accuracyBuckets} />;
-  const colorChart    = <ColorPerformanceChart data={stats.colorStats} />;
-  const monthlyChart  = <MonthlyTrendChart data={stats.monthlyTrend} />;
-  const bubblesChart  = <OpeningBubblesChart data={stats.openingBubbles} />;
-  const calendarChart = <CalendarChart data={stats.calendarData} />;
+  const pieChart      = <ResultsPieChart data={stats.pie} winRate={stats.winRate} theme={theme} />;
+  const openingsChart = <OpeningsBarChart data={stats.stackedOpenings} theme={theme} />;
+  const eloChart      = <EloLineChart data={stats.elo} theme={theme} />;
+  const accChart      = <AccuracyChart data={stats.accuracyBuckets} theme={theme} />;
+  const colorChart    = <ColorPerformanceChart data={stats.colorStats} theme={theme} />;
+  const monthlyChart  = <MonthlyTrendChart data={stats.monthlyTrend} theme={theme} />;
+  const bubblesChart  = <OpeningBubblesChart data={stats.openingBubbles} theme={theme} />;
+  const calendarChart = <CalendarChart data={stats.calendarData} theme={theme} />;
 
   // ── Desktop slides (width ≥ 1100): 2+1 grid per slide ───────────────────
   const desktopSlides = [
@@ -142,6 +154,7 @@ function App() {
 
   const slides = isDesktop ? desktopSlides : isPortrait ? portraitSlides : mobileSlides;
   const layoutKey = isDesktop ? 'desktop' : isPortrait ? 'portrait' : 'mobile';
+  const sliderKey = layoutKey;
 
   return (
     <div className="grid-layout">
@@ -171,6 +184,8 @@ function App() {
         pdfProgress={pdfProgress}
         fullHistory={fullHistory}
         onToggleHistory={setFullHistory}
+        theme={theme}
+        onThemeChange={changeTheme}
       />
 
       <FilterPanel {...filterProps} />
@@ -213,7 +228,7 @@ function App() {
             </div>
           );
         })()}
-        <ChartSlider key={layoutKey} slides={slides} />
+        <ChartSlider key={sliderKey} slides={slides} />
       </main>
 
       <GameHistory games={filteredData.games} />

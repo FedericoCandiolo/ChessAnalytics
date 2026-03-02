@@ -4,7 +4,7 @@ import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { Maximize2, X } from 'lucide-react';
 
-export default function ResultsPieChart({ data, winRate }) {
+export default function ResultsPieChart({ data, winRate, theme }) {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -28,6 +28,11 @@ export default function ResultsPieChart({ data, winRate }) {
       if (!width || !height) return;
       d3.select(container).selectAll('*').remove();
 
+      const cs = getComputedStyle(document.documentElement);
+      const WIN  = cs.getPropertyValue('--color-win').trim()  || '#00FF9C';
+      const DRAW = cs.getPropertyValue('--color-draw').trim() || '#FFF301';
+      const LOSS = cs.getPropertyValue('--color-loss').trim() || '#FF0101';
+
       const svg = d3.select(container).append('svg').attr('width', width).attr('height', height);
       const legendH = 28;
       const chartH = height - legendH;
@@ -45,7 +50,10 @@ export default function ResultsPieChart({ data, winRate }) {
         ...d,
         name: d.name.includes('Victoria') ? t('results.wins')
           : d.name.includes('Derrota') ? t('results.losses')
-          : t('results.drawsLabel')
+          : t('results.drawsLabel'),
+        color: d.name.includes('Victoria') ? WIN
+          : d.name.includes('Derrota') ? LOSS
+          : DRAW,
       }));
 
       const paths = g.selectAll('path').data(pie(translatedData)).join('path')
@@ -68,7 +76,7 @@ export default function ResultsPieChart({ data, winRate }) {
       // Center text
       g.append('text').attr('text-anchor', 'middle').attr('dy', '-0.1em')
         .style('font-size', `${Math.max(16, Math.min(28, radius * 0.38))}px`)
-        .style('font-weight', '700').style('fill', '#00FF9C').text(`${winRate}%`);
+        .style('font-weight', '700').style('fill', WIN).text(`${winRate}%`);
       g.append('text').attr('text-anchor', 'middle').attr('dy', '1.3em')
         .style('font-size', `${Math.max(8, radius * 0.12)}px`).style('fill', '#94a3b8')
         .style('letter-spacing', '0.05em').text(t('charts.winRate').toUpperCase());
@@ -89,7 +97,7 @@ export default function ResultsPieChart({ data, winRate }) {
     const ro = new ResizeObserver(() => requestAnimationFrame(draw));
     ro.observe(container);
     return () => { ro.disconnect(); d3.select(container).selectAll('*').remove(); };
-  }, [data, winRate, t]);
+  }, [data, winRate, t, theme]);
 
   return (
     <>
