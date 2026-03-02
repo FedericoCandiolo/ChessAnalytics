@@ -6,8 +6,8 @@ import { FileDown, Moon, Sun, Heart } from 'lucide-react';
 const THEMES = [
   { key: 'dark',         icon: <Moon size={11} /> },
   { key: 'light',        icon: <Sun size={11} /> },
-  { key: 'deuteranopia', icon: 'D' },
   { key: 'protanopia',   icon: 'P' },
+  { key: 'deuteranopia', icon: 'D' },
   { key: 'tritanopia',   icon: 'T' },
 ];
 
