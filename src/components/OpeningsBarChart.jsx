@@ -38,7 +38,7 @@ export default function OpeningsBarChart({ data }) {
       const innerH = N * barH;
       const svgH = innerH + mt + mb;
 
-      const svg = d3.select(container).append('svg').attr('width', width).attr('height', svgH);
+      const svg = d3.select(container).append('svg').attr('width', width).attr('height', svgH).style('overflow', 'hidden');
       const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
       const tt = tooltipRef.current;
 
@@ -102,26 +102,48 @@ export default function OpeningsBarChart({ data }) {
         .attr('dy', '0.35em').style('font-size', '9px').style('fill', '#94a3b8').text(d => d.total);
 
       // Y axis (opening names)
-      g.append('g').call(d3.axisLeft(y).tickSize(0))
-        .selectAll('text').style('font-size', '9px').style('fill', '#94a3b8')
+      const axisG = g.append('g').call(d3.axisLeft(y).tickSize(0));
+      axisG.selectAll('text')
+        .style('font-size', '9px').style('fill', '#94a3b8')
+        .style('pointer-events', 'all').style('cursor', 'default')
         .each(function() {
-          const el = d3.select(this), txt = el.text();
-          el.text(txt.length > 22 ? txt.slice(0, 21) + '…' : txt);
+          const el = d3.select(this);
+          const fullName = el.text();
+          const item = data.find(d => d.name === fullName);
+          el.text(fullName.length > 22 ? fullName.slice(0, 21) + '…' : fullName);
+          if (!item) return;
+          const familyLabel = t(`ecoFamilies.${item.family}`, item.family);
+          el.on('mouseover', (event) => {
+            tt.html(
+              `<strong style="color:#E5E7E9;display:block;margin-bottom:3px">${fullName}</strong>` +
+              `<span style="color:#64748b;font-size:10px">${familyLabel}</span>`
+            ).style('opacity', '1')
+              .style('left', `${event.clientX + 14}px`)
+              .style('top', `${event.clientY - 14}px`);
+          })
+          .on('mousemove', (event) => {
+            tt.style('left', `${event.clientX + 14}px`).style('top', `${event.clientY - 14}px`);
+          })
+          .on('mouseout', () => tt.style('opacity', '0'));
         });
-      g.select('.domain').remove();
+      axisG.select('.domain').remove();
 
-      // Legend
+      // Legend — item width adapts to available space so nothing overflows the SVG
+      const legAvailW = width - ml;
+      const legItemW = Math.min(78, Math.floor(legAvailW / 3.5));
       const legG = svg.append('g').attr('transform', `translate(${ml},${svgH - 4})`);
       colors.forEach((c, i) => {
-        const lx = i * 78;
+        const lx = i * legItemW;
         legG.append('rect').attr('x', lx).attr('y', -14).attr('width', 8).attr('height', 8).attr('fill', c).attr('rx', 2);
         legG.append('text').attr('x', lx + 11).attr('y', -7).style('font-size', '9px').style('fill', '#94a3b8').text(names[i]);
       });
-      // Pareto legend entry
-      const px = 3 * 78;
-      legG.append('rect').attr('x', px).attr('y', -14).attr('width', 14).attr('height', 8)
-        .attr('fill', 'none').attr('stroke', RESULT_COLORS.win).attr('stroke-width', 1.5).attr('rx', 2);
-      legG.append('text').attr('x', px + 18).attr('y', -7).style('font-size', '9px').style('fill', '#94a3b8').text(t('charts.paretoIn'));
+      // Pareto legend entry — only shown when there is enough horizontal room
+      const px = 3 * legItemW;
+      if (ml + px + 80 <= width) {
+        legG.append('rect').attr('x', px).attr('y', -14).attr('width', 14).attr('height', 8)
+          .attr('fill', 'none').attr('stroke', RESULT_COLORS.win).attr('stroke-width', 1.5).attr('rx', 2);
+        legG.append('text').attr('x', px + 18).attr('y', -7).style('font-size', '9px').style('fill', '#94a3b8').text(t('charts.paretoIn'));
+      }
     };
 
     draw();
