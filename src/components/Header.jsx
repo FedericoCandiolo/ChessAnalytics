@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
-import { FileDown, Moon, Sun } from 'lucide-react';
+import { FileDown, Moon, Sun, Heart } from 'lucide-react';
 
 const THEMES = [
   { key: 'dark',         icon: <Moon size={11} /> },
@@ -49,7 +49,9 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
   return (
     <header className="header">
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="ChessAnalytics Logo"
+        <img
+          src={`${process.env.PUBLIC_URL}/${theme === 'light' ? 'logo%20claro.png' : 'logo.png'}`}
+          alt="ChessAnalytics Logo"
           style={{ height: '2.5rem', width: 'auto', borderRadius: '0.25rem' }} />
       </div>
 
@@ -110,6 +112,18 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
 
         <ThemeSwitcher theme={theme} onThemeChange={onThemeChange} />
         <LangSwitcher />
+
+        {/* Patreon link */}
+        <a
+          href="https://www.patreon.com/cw/ChessAnalytics"
+          target="_blank"
+          rel="noreferrer"
+          className="patreon-btn"
+          title="Support on Patreon"
+        >
+          <Heart size={12} fill="currentColor" />
+          <span className="patreon-label">Patreon</span>
+        </a>
 
         {/* PDF Export button */}
         <button
