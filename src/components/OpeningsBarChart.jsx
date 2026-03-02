@@ -26,7 +26,7 @@ export default function OpeningsBarChart({ data }) {
     if (!container || !data || data.length === 0) return;
 
     const draw = () => {
-      const { width } = container.getBoundingClientRect();
+      const width = container.clientWidth;
       if (!width) return;
       d3.select(container).selectAll('*').remove();
 
@@ -140,7 +140,7 @@ export default function OpeningsBarChart({ data }) {
             {maximized ? <X size={14} /> : <Maximize2 size={14} />}
           </button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} ref={containerRef} />
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }} ref={containerRef} />
       </div>
     </>
   );

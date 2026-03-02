@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChessData } from './hooks/useChessData';
 import { generatePDF } from './utils/exportPDF';
+import { ELO_COLORS } from './constants';
 import Header from './components/Header';
 import FilterPanel from './components/FilterPanel';
 import FilterDrawer from './components/FilterDrawer';
@@ -174,11 +175,6 @@ function App() {
 
       <FilterPanel {...filterProps} />
 
-      <MobileFAB
-        onFilterOpen={() => setFilterDrawerOpen(true)}
-        onHistoryOpen={() => setHistoryDrawerOpen(true)}
-      />
-
       <FilterDrawer
         isOpen={isFilterDrawerOpen}
         onClose={() => setFilterDrawerOpen(false)}
@@ -193,6 +189,30 @@ function App() {
       </div>
 
       <main className="content">
+        <MobileFAB
+          onFilterOpen={() => setFilterDrawerOpen(true)}
+          onHistoryOpen={() => setHistoryDrawerOpen(true)}
+        />
+        {stats.mainTimeClass && (() => {
+          const mc = stats.mainTimeClass;
+          const col = ELO_COLORS[mc] || '#01B6FF';
+          return (
+            <div className="mobile-stats-strip">
+              <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: col, fontWeight: 700 }}>
+                {t(`timeClasses.${mc}`, mc)}
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                {t('header.currentElo')} <strong style={{ color: col }}>{stats.currentEloByMode?.[mc] ?? '—'}</strong>
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                {t('header.maxElo')} <strong style={{ color: col }}>{stats.maxEloByMode?.[mc] ?? '—'}</strong>
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: 'auto' }}>
+                <strong style={{ color: '#E5E7E9' }}>{filteredData.games.length}</strong> {t('header.games').toLowerCase()}
+              </span>
+            </div>
+          );
+        })()}
         <ChartSlider key={layoutKey} slides={slides} />
       </main>
 
