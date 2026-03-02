@@ -1,21 +1,21 @@
 {
   "files": {
-    "main.css": "/ChessAnalytics/static/css/main.10c8eee7.css",
-    "main.js": "/ChessAnalytics/static/js/main.44978007.js",
-    "static/js/239.d4b64d64.chunk.js": "/ChessAnalytics/static/js/239.d4b64d64.chunk.js",
-    "static/js/977.e08ce853.chunk.js": "/ChessAnalytics/static/js/977.e08ce853.chunk.js",
-    "static/js/455.148a62c6.chunk.js": "/ChessAnalytics/static/js/455.148a62c6.chunk.js",
-    "static/js/453.35423958.chunk.js": "/ChessAnalytics/static/js/453.35423958.chunk.js",
-    "index.html": "/ChessAnalytics/index.html",
-    "main.10c8eee7.css.map": "/ChessAnalytics/static/css/main.10c8eee7.css.map",
-    "main.44978007.js.map": "/ChessAnalytics/static/js/main.44978007.js.map",
-    "239.d4b64d64.chunk.js.map": "/ChessAnalytics/static/js/239.d4b64d64.chunk.js.map",
-    "977.e08ce853.chunk.js.map": "/ChessAnalytics/static/js/977.e08ce853.chunk.js.map",
-    "455.148a62c6.chunk.js.map": "/ChessAnalytics/static/js/455.148a62c6.chunk.js.map",
-    "453.35423958.chunk.js.map": "/ChessAnalytics/static/js/453.35423958.chunk.js.map"
+    "main.css": "/static/css/main.10c8eee7.css",
+    "main.js": "/static/js/main.91523634.js",
+    "static/js/239.d4b64d64.chunk.js": "/static/js/239.d4b64d64.chunk.js",
+    "static/js/977.e08ce853.chunk.js": "/static/js/977.e08ce853.chunk.js",
+    "static/js/455.148a62c6.chunk.js": "/static/js/455.148a62c6.chunk.js",
+    "static/js/453.35423958.chunk.js": "/static/js/453.35423958.chunk.js",
+    "index.html": "/index.html",
+    "main.10c8eee7.css.map": "/static/css/main.10c8eee7.css.map",
+    "main.91523634.js.map": "/static/js/main.91523634.js.map",
+    "239.d4b64d64.chunk.js.map": "/static/js/239.d4b64d64.chunk.js.map",
+    "977.e08ce853.chunk.js.map": "/static/js/977.e08ce853.chunk.js.map",
+    "455.148a62c6.chunk.js.map": "/static/js/455.148a62c6.chunk.js.map",
+    "453.35423958.chunk.js.map": "/static/js/453.35423958.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.10c8eee7.css",
-    "static/js/main.44978007.js"
+    "static/js/main.91523634.js"
   ]
 }
