@@ -199,6 +199,9 @@ PAGE = """<!doctype html>
 <title>{title} · {player}</title>
 <style>
   * {{ box-sizing: border-box; }}
+  /* Dark page background fills the margins too (else PDF shows white edges). */
+  @page {{ size:A4; margin:1.4cm; background:{C[bg]}; }}
+  html {{ background:{C[bg]}; }}
   body {{ margin:0; background:{C[bg]}; color:{C[text]};
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     padding:2rem 1rem; }}
@@ -209,11 +212,12 @@ PAGE = """<!doctype html>
     text-transform:uppercase; }}
   h1 {{ margin:.15rem 0 .25rem; font-size:1.8rem; }}
   .meta {{ color:{C[sub]}; font-size:.85rem; }}
-  .kpis {{ display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1.25rem; }}
+  .kpis {{ display:flex; flex-wrap:wrap; gap:.6rem; margin-bottom:1.25rem; }}
+  /* flex-basis 150px + wrap → KPIs reflow to a new line instead of overflowing the page. */
   .kpi {{ background:{C[card]}; border:1px solid {C[border]}; border-radius:.6rem;
-    padding:.7rem 1rem; min-width:110px; flex:1; }}
+    padding:.6rem .9rem; flex:1 1 150px; min-width:150px; }}
   .kpi-label {{ color:{C[sub]}; font-size:.6rem; text-transform:uppercase; letter-spacing:.06em; }}
-  .kpi-value {{ font-size:1.5rem; font-weight:700; margin-top:.15rem; }}
+  .kpi-value {{ font-size:1.4rem; font-weight:700; margin-top:.15rem; white-space:nowrap; }}
   .headline {{ background:{C[card]}; border-left:3px solid {C[accent]}; border-radius:.4rem;
     padding:.8rem 1rem; color:{C[text]}; line-height:1.5; font-size:.95rem; }}
   section {{ margin:1.25rem 0; }}
@@ -236,7 +240,13 @@ PAGE = """<!doctype html>
   .num {{ text-align:right; }}
   footer {{ margin-top:1.5rem; padding-top:.8rem; border-top:1px solid {C[border]};
     color:{C[sub]}; font-size:.7rem; text-align:center; }}
-  @media print {{ body {{ padding:0; }} .kpi, .headline, table {{ break-inside:avoid; }} }}
+  @media print {{
+    body {{ padding:0; }}
+    /* Keep individual blocks/rows from being split across pages. */
+    .kpi, .headline, .bar-row, tr, li {{ break-inside:avoid; }}
+    table, .bars {{ break-inside:avoid; }}
+    h2 {{ break-after:avoid; }}
+  }}
 </style></head>
 <body><div class="wrap">{body}</div></body></html>
 """
