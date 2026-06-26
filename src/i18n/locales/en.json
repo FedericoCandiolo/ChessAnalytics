@@ -8,7 +8,12 @@
     "maxElo": "MAX",
     "games": "GAMES",
     "exportPdf": "Export PDF",
-    "generatingPdf": "Generating..."
+    "generatingPdf": "Generating...",
+    "exportAI": "Export for AI",
+    "aiCopied": "Copied!",
+    "copyAll": "Copy all",
+    "aiSkillTip": "Prefer interactive analysis? Install the ChessAnalytics skill for Claude.",
+    "aiSkillDownload": "Download skill"
   },
   "filters": {
     "title": "Filters",

@@ -8,7 +8,12 @@
     "maxElo": "MÁX",
     "games": "PARTIDAS",
     "exportPdf": "Exportar PDF",
-    "generatingPdf": "Generando..."
+    "generatingPdf": "Generando...",
+    "exportAI": "Exportar para IA",
+    "aiCopied": "¡Copiado!",
+    "copyAll": "Copiar todo",
+    "aiSkillTip": "¿Prefieres un análisis interactivo? Instala la skill de ChessAnalytics para Claude.",
+    "aiSkillDownload": "Descargar skill"
   },
   "filters": {
     "title": "Filtros",

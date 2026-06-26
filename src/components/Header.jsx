@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n/i18n';
-import { FileDown, Moon, Sun, Heart } from 'lucide-react';
+import { FileDown, Moon, Sun, Heart, Bot } from 'lucide-react';
 
 const THEMES = [
   { key: 'dark',         icon: <Moon size={11} /> },
@@ -40,7 +40,7 @@ function LangSwitcher() {
   );
 }
 
-export default function Header({ currentElo, gamesCount, username, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory, theme, onThemeChange }) {
+export default function Header({ currentElo, gamesCount, username, onUsernameSubmit, mainTimeClass, currentEloByMode, maxEloByMode, onExportAI, onExportPDF, pdfLoading, pdfProgress, fullHistory, onToggleHistory, theme, onThemeChange }) {
   const { t } = useTranslation();
   const modeColor = mainTimeClass ? `var(--color-${mainTimeClass})` : 'var(--color-accent-blue)';
   const modeCurrentElo = mainTimeClass ? (currentEloByMode?.[mainTimeClass] ?? '---') : '---';
@@ -87,7 +87,6 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
           <input className="search-input" placeholder={t('header.playerPlaceholder')}
             defaultValue={username}
             onKeyDown={(e) => e.key === 'Enter' && onUsernameSubmit(e.target.value.toLowerCase().trim())} />
-          {/* History range toggle */}
           <div style={{ display: 'flex', gap: 0, marginTop: '0.25rem', background: 'var(--color-bg-dark)', borderRadius: '5px', padding: '2px' }}>
             <button
               onClick={() => onToggleHistory(false)}
@@ -124,6 +123,15 @@ export default function Header({ currentElo, gamesCount, username, onUsernameSub
           <Heart size={12} fill="currentColor" />
           <span className="patreon-label">Patreon</span>
         </a>
+
+        {/* AI Export button */}
+        <button
+          className="pdf-export-btn"
+          onClick={onExportAI}
+          title={t('header.exportAI')}
+        >
+          <Bot size={15} />
+        </button>
 
         {/* PDF Export button */}
         <button

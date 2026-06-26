@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChessData } from './hooks/useChessData';
 import { generatePDF } from './utils/exportPDF';
+import { buildAIExport } from './utils/exportAI';
 import { ELO_COLORS } from './constants';
 import Header from './components/Header';
 import FilterPanel from './components/FilterPanel';
@@ -20,12 +21,63 @@ import MonthlyTrendChart from './components/MonthlyTrendChart';
 import OpeningBubblesChart from './components/OpeningBubblesChart';
 import CalendarChart from './components/CalendarChart';
 
+// ── AI Export Modal ───────────────────────────────────────────────────────────
+function AIExportModal({ text, onClose, t }) {
+  const taRef  = useRef();
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => taRef.current?.select(), 50);
+  }, []);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      taRef.current?.select();
+      document.execCommand('copy');
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <>
+      <div className="chart-max-overlay" onClick={onClose} />
+      <div className="ai-export-modal">
+        <div className="ai-export-modal-header">
+          <span className="ai-export-modal-title">{t('header.exportAI')}</span>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="ai-export-copy-btn" onClick={handleCopy}>
+              {copied ? t('header.aiCopied') : t('header.copyAll')}
+            </button>
+            <button className="ai-export-close-btn" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        <textarea ref={taRef} readOnly value={text} className="ai-export-textarea" />
+        <div className="ai-export-modal-footer">
+          <span>{t('header.aiSkillTip')}</span>
+          <a
+            href={`${process.env.PUBLIC_URL}/downloads/chess-analytics-coach.zip`}
+            download
+            className="ai-export-skill-link"
+          >
+            {t('header.aiSkillDownload')}
+          </a>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [isHistoryDrawerOpen, setHistoryDrawerOpen] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
+  const [aiText, setAiText] = useState(null);
 
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('chess-theme') || 'dark';
@@ -63,6 +115,10 @@ function App() {
 
   const { stats } = filteredData;
 
+  const handleExportAI = () => {
+    setAiText(buildAIExport(username, filteredData, i18n.language));
+  };
+
   const handleExportPDF = async () => {
     if (pdfLoading) return;
     setPdfLoading(true);
@@ -97,7 +153,6 @@ function App() {
   // ── Desktop slides (width ≥ 1100): 2+1 grid per slide ───────────────────
   const desktopSlides = [
     {
-      // Slide 1: Pie + Openings top row, ELO full bottom
       label: `${t('slides.results')} + ${t('slides.elo')}`,
       node: (
         <div className="slide-desktop-3">
@@ -108,7 +163,6 @@ function App() {
       )
     },
     {
-      // Slide 2: Accuracy + Color stacked left, Bubbles full right
       label: `${t('slides.accuracy')} + ${t('slides.bubbles')}`,
       node: (
         <div className="slide-2col-lr">
@@ -121,7 +175,6 @@ function App() {
       )
     },
     {
-      // Slide 3: Calendar full top, Monthly full bottom
       label: `${t('slides.calendar')} + ${t('slides.monthly')}`,
       node: (
         <div className="slide-col-2">
@@ -154,7 +207,6 @@ function App() {
 
   const slides = isDesktop ? desktopSlides : isPortrait ? portraitSlides : mobileSlides;
   const layoutKey = isDesktop ? 'desktop' : isPortrait ? 'portrait' : 'mobile';
-  const sliderKey = layoutKey;
 
   return (
     <div className="grid-layout">
@@ -171,6 +223,8 @@ function App() {
         </div>
       )}
 
+      {aiText && <AIExportModal text={aiText} onClose={() => setAiText(null)} t={t} />}
+
       <Header
         currentElo={stats.currentElo}
         gamesCount={filteredData.games.length}
@@ -179,6 +233,7 @@ function App() {
         mainTimeClass={stats.mainTimeClass}
         currentEloByMode={stats.currentEloByMode}
         maxEloByMode={stats.maxEloByMode}
+        onExportAI={handleExportAI}
         onExportPDF={handleExportPDF}
         pdfLoading={pdfLoading}
         pdfProgress={pdfProgress}
@@ -228,7 +283,7 @@ function App() {
             </div>
           );
         })()}
-        <ChartSlider key={sliderKey} slides={slides} />
+        <ChartSlider key={layoutKey} slides={slides} />
       </main>
 
       <GameHistory games={filteredData.games} />

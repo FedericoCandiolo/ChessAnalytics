@@ -21,6 +21,9 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "build:skill": "node scripts/build-skill-zip.js",
+    "prestart": "npm run build:skill",
+    "prebuild": "npm run build:skill",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
