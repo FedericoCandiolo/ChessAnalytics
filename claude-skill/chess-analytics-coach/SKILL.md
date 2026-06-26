@@ -109,23 +109,35 @@ Instead:
 2. **Only build the report when the user clearly approves** the analysis is complete or
    explicitly asks for it (e.g. "make the report", "I'm done, export it", "give me the
    PDF"). If it's ambiguous, ask which format rather than assuming.
-3. When approved, assemble the conversation's findings into a JSON file (e.g.
-   `report.json`) — schema at the top of `scripts/build_report.py`: `player`, `lang`,
-   `dateRange`, `headline`, `summary`, `strengths`, `weaknesses`, `recommendations`, and
-   any of `colorPerformance`, `accuracyDistribution`, `monthlyTrend`, `topOpenings`.
-   Reuse the numbers already discussed — do not recompute or invent. Set `lang` to the
-   user's language.
-4. Render in the format they chose (runs in the no-network sandbox):
+3. **Always render via `scripts/build_report.py` — never hand-write the HTML.** The script
+   owns the ChessAnalytics layout and palette so every report looks identical. Your job is
+   only to assemble the content JSON; the script does the design.
+4. Assemble the conversation's findings into a JSON file (e.g. `report.json`). Full schema
+   is at the top of `scripts/build_report.py`; key points:
+   - `player`, `lang` (`es`/`en` — match the user), `dateRange`, optional `headline`.
+   - `summary`: totalGames, wins, losses, draws, winRate, mainTimeClass,
+     currentEloByTimeClass, peakEloByTimeClass.
+   - `topOpenings`: each with name, family, games, wins, losses, netScore, winRate.
+   - `colorPerformance`: white & black, each wins/draws/losses/total/winRate.
+   - `accuracyDistribution`, `weekdayPerformance`, `monthlyTrend`.
+   - `strengths`, `weaknesses`, `recommendations`: lists of `{"title","text"}` objects —
+     `title` = a short label, `text` = the explanation. (Plain strings also work but the
+     title/body cards look best.)
+   Reuse the numbers already discussed — do not recompute or invent. Omit any section you
+   don't have; the script renders only what's present.
+5. Render in the format they chose (runs in the no-network sandbox):
    ```
    python scripts/build_report.py --input report.json --format html   # styled HTML
    python scripts/build_report.py --input report.json --format pdf    # PDF
    python scripts/build_report.py --input report.json --format both   # both files
    ```
-   - **HTML** = the ChessAnalytics dark-theme look (KPI header, bar charts), self-contained.
-   - **PDF** = same content; the script uses weasyprint if present (brand-perfect), else a
-     clean reportlab fallback. If it reports no PDF engine, deliver the HTML and tell the
-     user to open it and **Print → Save as PDF**.
-5. Give the user the resulting file(s) to download.
+   - **HTML / PDF** share one design: dark ChessAnalytics header + KPIs, openings table,
+     color & accuracy panels, weekday grid, monthly trend, strengths/weaknesses cards,
+     numbered recommendations.
+   - PDF uses weasyprint if present (renders this exact HTML), else a simpler reportlab
+     fallback. If it reports no PDF engine, deliver the HTML and tell the user to open it
+     and **Print → Save as PDF**.
+6. Give the user the resulting file(s) to download.
 
 ## Emailing the report
 
