@@ -1,12 +1,20 @@
 # Chess.com Public API — fetch & aggregation reference
 
-Use this when the export is insufficient and the bundled script cannot run (no network).
-The API is public, read-only, no key required, but **requires a `User-Agent` header** —
-requests without one get `403`/`429`.
+The API is public, read-only, and needs no key. Direct HTTP clients should send a
+`User-Agent` header (the script does); Claude's web-fetch tool handles this for you.
 
-```
-User-Agent: ChessAnalyticsCoach/1.0 (contact: your-email@example.com)
-```
+## Recommended flow on Claude.ai (web-fetch + sandbox aggregate)
+
+The aggregation script runs in a sandbox **without** network. So **Claude web-fetches**
+the data and the script crunches the saved files:
+
+1. Web-fetch the archive index, keep the months overlapping the window.
+2. Web-fetch each needed month URL and **save the response JSON** to
+   `archives/YYYY_MM.json` (save it as-is — the script reads `{"games":[...]}`).
+3. Run `python scripts/analyze_chesscom.py <username> --input archives --from … --to …`.
+
+In a networked environment (Claude Code, local shell) you can instead let the script
+fetch directly — omit `--input`.
 
 ## Endpoints
 

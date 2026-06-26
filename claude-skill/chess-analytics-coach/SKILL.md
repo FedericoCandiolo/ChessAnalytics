@@ -1,94 +1,130 @@
 ---
 name: chess-analytics-coach
-description: Analyze a chess player's Chess.com performance and give coaching recommendations. Use when the user pastes a ChessAnalytics "Export for AI" report, asks to analyze their or someone's chess games, wants insights on openings / time controls / accuracy / win rate, or asks for chess improvement advice based on Chess.com data. Reads the pasted ChessAnalytics JSON export by default and fetches the Chess.com public API directly only when game-level detail is required.
+description: Analyze a chess player's Chess.com performance and give coaching recommendations. Use when the user asks to analyze their or someone's chess games, names a Chess.com username to review, wants insights on openings / time controls / accuracy / win rate, asks for chess improvement advice, or pastes a ChessAnalytics "Export for AI" report. By default it fetches the player's games from the public Chess.com API; it can also read a pasted ChessAnalytics export.
 ---
 
 # Chess Analytics Coach
 
-Turn a player's aggregated Chess.com statistics into clear, actionable chess-coaching
-advice. The data comes from **ChessAnalytics** (a dashboard that already filters and
-aggregates a player's games).
+Turn a player's Chess.com record into clear, actionable coaching advice — strengths,
+weaknesses, and ranked recommendations.
 
-## 1. Choose the data path
+There is **no ChessAnalytics API to call** — ChessAnalytics is a static dashboard. Data
+comes from one of two sources below. Pick the first that applies.
 
-There are two sources. **Prefer the export.** Only fetch Chess.com when the export
-cannot answer the question.
+## Data source A — fetch from Chess.com (default)
 
-| Situation | Path |
-|---|---|
-| User pasted a ChessAnalytics report (text containing `DATA:` / `DATOS:` + a JSON block) | **Use the export** (Section 2) |
-| User gives only a username, or no data at all | Ask them to paste their export, OR offer to fetch (Section 3) |
-| The export lacks the needed detail — e.g. *which specific games* were lost in an opening, per-game accuracy, exact opponents, dates of a slump | **Fetch detail** from Chess.com (Section 3) |
+Use this whenever the user gives a username (e.g. *"analyze chess.com user fede"*,
+*"review my blitz games"*). The Chess.com public API is JSON and needs no key.
 
-The export is an aggregate snapshot of whatever filters the user had applied in the app
-(time class, date range, color, etc.). It is the right basis for an overall assessment.
-Chess.com is the fallback for drilling into specifics the aggregate omits.
+The script that aggregates the games runs in a **sandbox without network access**, so
+**you (Claude) fetch the data with your web-fetch tool**, save it, and let the script
+crunch it. Steps:
 
-## 2. Reading the export (default path)
+1. **Pick the window.** Default to the **last ~3 months**. Honor anything the user
+   specifies (date range, `time_class`, color, rated-only).
+2. **Get the archive index** — web-fetch:
+   ```
+   https://api.chess.com/pub/player/<username>/games/archives
+   ```
+   It returns `{ "archives": [ ".../games/YYYY/MM", ... ] }`. Keep only the months that
+   overlap your window.
+3. **Fetch each needed month** — web-fetch each selected archive URL and **save the raw
+   JSON** to a file, e.g. `archives/2024_11.json`. Don't trim it; save the response as-is.
+4. **Aggregate in the sandbox** (no network used here):
+   ```
+   python scripts/analyze_chesscom.py <username> --input archives \
+       --from YYYY-MM-DD --to YYYY-MM-DD [--time-class blitz] [--color black] [--detail]
+   ```
+   It prints a JSON stats object — the same aggregation ChessAnalytics itself uses.
+5. Coach from that JSON (Sections "Analysis" + "Output").
 
-The pasted text is a prompt followed by a JSON object after `DATA:` (English) or
-`DATOS:` (Spanish). Extract and parse that JSON object.
+If your environment *does* have direct network (e.g. Claude Code), you can skip the
+manual fetch and let the script pull everything: `python scripts/analyze_chesscom.py
+<username> --from … --to …`.
 
-For the full field-by-field schema and how to interpret each metric, read
+If web-fetch is blocked by a domain allowlist, say so and offer source B instead.
+
+## Data source B — a pasted ChessAnalytics export
+
+If the user pastes a ChessAnalytics report (text with `DATA:` / `DATOS:` followed by a
+JSON block), just parse and analyze that JSON directly — no fetching. Full field schema:
 [reference/export-schema.md](reference/export-schema.md).
 
-Key gotchas:
-- `medianNetScore` ranges from **-1** (all losses) to **+1** (all wins); 0 is balanced.
+This is the right path when the user prefers not to share a username, wants exactly the
+slice they filtered in the app, or web-fetch is unavailable.
+
+## Reading the data (both sources)
+
+Endpoints, game-object fields, and the result/opening/weekday derivation rules are in
+[reference/chesscom-api.md](reference/chesscom-api.md). Gotchas common to both:
+
+- ELO is **per time class**, not one number.
 - Opening `netScore` = wins − losses (practical result, not win rate).
-- `topOpenings` is capped at the 20 most-played; absence of an opening ≠ never played.
-- ELO is reported **per time class**, not a single number.
+- Weekday `medianNetScore` ∈ [-1, +1]: +1 all wins, -1 all losses, 0 balanced.
+- Accuracy is only present for analyzed games, so accuracy counts can sum to fewer than
+  the total games.
 
-## 3. Fetching detail from Chess.com (escalation path)
-
-Only when the export is insufficient. Two ways, in order of preference:
-
-**a) Run the bundled script** (when the sandbox has network access):
-```
-python scripts/analyze_chesscom.py <username> --from YYYY-MM-DD --to YYYY-MM-DD [--time-class blitz] [--detail]
-```
-It mirrors ChessAnalytics' own aggregation and adds game-level detail (recent losses,
-per-opening breakdown, accuracy by time class). Output is JSON on stdout. Match the
-date range / time class to the filters implied by the user's export or question.
-
-**b) If the script can't reach the network**, fetch specific months directly. The
-endpoints and aggregation rules are in [reference/chesscom-api.md](reference/chesscom-api.md).
-Target only the months you need (e.g. the month of a reported slump) — do not pull a
-player's entire history game-by-game.
-
-Always set a descriptive `User-Agent` header; Chess.com rejects requests without one.
-
-## 4. Analysis methodology
+## Analysis methodology
 
 Produce a coach's read, not a data dump. Apply these lenses:
 
-- **Overall level & trajectory** — ELO per main time class, overall win rate, and the
-  `monthlyTrend` direction (improving / flat / declining). ~50% win rate means a stable
-  ladder; consistently higher means actively climbing.
-- **Color imbalance** — a gap >8–10 pts in win rate between White and Black points to a
-  weak repertoire on the worse side. Name the side and recommend study there.
-- **Opening repertoire** — separate *mains* (high `games`) from *leaks* (enough volume,
+- **Level & trajectory** — ELO per main time class, overall win rate, and the
+  `monthlyTrend` direction. ~50% win rate ≈ a stable ladder; consistently higher = climbing.
+- **Color imbalance** — a White-vs-Black win-rate gap >8–10 pts points to a weak
+  repertoire on the worse side. Name the side; recommend study there.
+- **Opening repertoire** — separate *mains* (high `games`) from *leaks* (decent volume,
   say ≥8–10 games, but low `winRate` or negative `netScore`). Leaks are the highest-ROI
-  study targets. Praise the strongest main lines.
-- **Accuracy profile** — a heavy `<50` / `50-59` tail signals blunders / calculation
-  errors → tactics training and, if they play mostly bullet, trying slower controls.
-  A healthy `80-89` / `90+` mass with poor results points to strategy/endgame, not
-  tactics.
-- **Tilt & fatigue** — weekdays with strongly negative `medianNetScore` (especially with
-  high `gamesPlayed`) suggest session-length or emotional-control issues.
+  study targets. Praise the strongest mains.
+- **Accuracy profile** — a heavy `<50` / `50-59` tail = blunders/calculation → tactics
+  training, and slower time controls if they mostly play bullet. A healthy `80-89`/`90+`
+  mass with poor results → strategy/endgames, not tactics.
+- **Tilt & fatigue** — weekdays with strongly negative `medianNetScore` and high
+  `gamesPlayed` suggest session-length or emotional-control issues.
 
-## 5. Output format
+## Output
 
-Respond in the **same language as the user / their export** (Spanish export → Spanish).
-Structure:
+Respond in the **user's language** (Spanish request/export → Spanish). Structure:
 
 1. **Summary** — 2–3 sentences: level, primary time control, win rate, trend.
-2. **Top 3 strengths** — concrete, each tied to a number from the data.
+2. **Top 3 strengths** — concrete, each tied to a number.
 3. **Top 3 weaknesses** — concrete, each tied to a number.
-4. **3–5 recommendations** — specific and actionable (name the opening to study, the
-   training type, the time-control change), ordered by expected impact.
-5. *(optional)* **Deep dive** — if you fetched detail, surface the specific games /
-   patterns found.
+4. **3–5 recommendations** — specific and actionable (which opening to study, what
+   training, which time-control change), ordered by expected impact.
+5. *(optional)* **Deep dive** — if you ran `--detail`, surface the specific lost games /
+   patterns.
 
-Cite the numbers you used ("47% with Black across 112 games") so the advice is grounded.
-Never invent stats that aren't in the data — if something is needed and missing, say so
-or fetch it.
+Cite the numbers you used ("47% with Black across 112 games"). Never invent stats; if
+something needed is missing, fetch it or say so.
+
+## Generate a shareable report
+
+When the user asks for a report (or after a substantial analysis, offer one), produce a
+self-contained HTML report in the **ChessAnalytics visual style** (dark theme, the app's
+win/draw/loss palette, KPI header, bar charts).
+
+1. Assemble the conversation's findings into a JSON file (e.g. `report.json`) following
+   the schema documented at the top of `scripts/build_report.py`: `player`, `lang`,
+   `dateRange`, `headline`, `summary`, `strengths`, `weaknesses`, `recommendations`, and
+   any of `colorPerformance`, `accuracyDistribution`, `monthlyTrend`, `topOpenings`.
+   Reuse the numbers already computed — do not recompute or invent.
+2. Render it (works in the no-network sandbox):
+   ```
+   python scripts/build_report.py --input report.json --output report.html
+   ```
+3. Give the user the `report.html` file to download. Mention they can open it in a browser
+   and **Print → Save as PDF**. Set `lang` to match the user's language.
+
+## Emailing the report
+
+Sending email is **not** a built-in capability of Claude.ai or Claude Desktop, so do not
+promise it unconditionally. Handle it like this:
+
+- **If an email tool/connector is available** in the session (e.g. a Gmail connector or an
+  email MCP server — common in Claude Desktop with MCP configured), offer to send
+  `report.html` to an address the user provides, and use that tool.
+- **Otherwise**, say email isn't available here and fall back: provide the `report.html`
+  (and/or a PDF the user prints) for them to attach and send themselves. Optionally draft
+  the email subject and body text they can copy.
+
+Never attempt to send mail straight from the sandbox (SMTP) — outbound network there is
+blocked; it will fail.
