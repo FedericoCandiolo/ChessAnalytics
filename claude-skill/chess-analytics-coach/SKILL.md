@@ -96,23 +96,36 @@ Respond in the **user's language** (Spanish request/export → Spanish). Structu
 Cite the numbers you used ("47% with Black across 112 games"). Never invent stats; if
 something needed is missing, fetch it or say so.
 
-## Generate a shareable report
+## Generate a shareable report — ON DEMAND ONLY
 
-When the user asks for a report (or after a substantial analysis, offer one), produce a
-self-contained HTML report in the **ChessAnalytics visual style** (dark theme, the app's
-win/draw/loss palette, KPI header, bar charts).
+**Do not auto-generate a report.** The user wants to chat, ask follow-ups, and dig deeper
+across multiple turns first. Generating a file after the first analysis interrupts that.
 
-1. Assemble the conversation's findings into a JSON file (e.g. `report.json`) following
-   the schema documented at the top of `scripts/build_report.py`: `player`, `lang`,
+Instead:
+
+1. **Offer early, build late.** Once you've given the first analysis, mention *once* that a
+   downloadable report is available in **HTML or PDF** whenever they're ready — then keep
+   analyzing / answering. Don't ask again every turn.
+2. **Only build the report when the user clearly approves** the analysis is complete or
+   explicitly asks for it (e.g. "make the report", "I'm done, export it", "give me the
+   PDF"). If it's ambiguous, ask which format rather than assuming.
+3. When approved, assemble the conversation's findings into a JSON file (e.g.
+   `report.json`) — schema at the top of `scripts/build_report.py`: `player`, `lang`,
    `dateRange`, `headline`, `summary`, `strengths`, `weaknesses`, `recommendations`, and
    any of `colorPerformance`, `accuracyDistribution`, `monthlyTrend`, `topOpenings`.
-   Reuse the numbers already computed — do not recompute or invent.
-2. Render it (works in the no-network sandbox):
+   Reuse the numbers already discussed — do not recompute or invent. Set `lang` to the
+   user's language.
+4. Render in the format they chose (runs in the no-network sandbox):
    ```
-   python scripts/build_report.py --input report.json --output report.html
+   python scripts/build_report.py --input report.json --format html   # styled HTML
+   python scripts/build_report.py --input report.json --format pdf    # PDF
+   python scripts/build_report.py --input report.json --format both   # both files
    ```
-3. Give the user the `report.html` file to download. Mention they can open it in a browser
-   and **Print → Save as PDF**. Set `lang` to match the user's language.
+   - **HTML** = the ChessAnalytics dark-theme look (KPI header, bar charts), self-contained.
+   - **PDF** = same content; the script uses weasyprint if present (brand-perfect), else a
+     clean reportlab fallback. If it reports no PDF engine, deliver the HTML and tell the
+     user to open it and **Print → Save as PDF**.
+5. Give the user the resulting file(s) to download.
 
 ## Emailing the report
 
@@ -120,11 +133,11 @@ Sending email is **not** a built-in capability of Claude.ai or Claude Desktop, s
 promise it unconditionally. Handle it like this:
 
 - **If an email tool/connector is available** in the session (e.g. a Gmail connector or an
-  email MCP server — common in Claude Desktop with MCP configured), offer to send
-  `report.html` to an address the user provides, and use that tool.
-- **Otherwise**, say email isn't available here and fall back: provide the `report.html`
-  (and/or a PDF the user prints) for them to attach and send themselves. Optionally draft
-  the email subject and body text they can copy.
+  email MCP server — common in Claude Desktop with MCP configured), offer to send the
+  report file to an address the user provides, and use that tool.
+- **Otherwise**, say email isn't available here and fall back: provide the report file
+  (HTML or PDF) for them to attach and send themselves. Optionally draft the email subject
+  and body text they can copy.
 
 Never attempt to send mail straight from the sandbox (SMTP) — outbound network there is
 blocked; it will fail.

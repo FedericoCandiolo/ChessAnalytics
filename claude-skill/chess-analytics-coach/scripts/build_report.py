@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Render a self-contained HTML coaching report in the ChessAnalytics visual style.
+"""Render a coaching report in the ChessAnalytics visual style — HTML and/or PDF.
 
 Claude assembles the report content (the analysis it produced in the conversation +
-the key stats) into a JSON file, then runs:
+the key stats) into a JSON file, then runs ONE of:
 
-    python scripts/build_report.py --input report.json --output report.html
+    python scripts/build_report.py --input report.json --format html   # default
+    python scripts/build_report.py --input report.json --format pdf
+    python scripts/build_report.py --input report.json --format both
 
-The output is a single HTML file with inline CSS (no network, no dependencies). It opens
-in any browser and can be "Printed to PDF". Runs fine in the no-network sandbox.
+HTML is a single self-contained file (inline CSS, no deps) that opens in any browser.
+PDF generation tries, in order: weasyprint (renders the exact HTML → brand-perfect),
+then reportlab (clean branded fallback). If neither library is available the script
+writes the HTML and tells you to use the browser's Print → Save as PDF.
 
 Input JSON schema (all sections optional except player + at least one of the lists):
 
@@ -88,7 +92,7 @@ def ul(items, kind):
     return f'<ul class="list {kind}">{lis}</ul>'
 
 
-def build(d):
+def build_html(d):
     t = L.get(d.get("lang", "en"), L["en"])
     player = esc(d.get("player", "—"))
     dr = d.get("dateRange") or {}
@@ -238,18 +242,197 @@ PAGE = """<!doctype html>
 """
 
 
+# ── PDF generation ────────────────────────────────────────────────────────────
+def write_pdf(d, html_str, out_path):
+    """Write a PDF. Try weasyprint (renders our HTML 1:1), then reportlab. Returns the
+    engine name used, or raises RuntimeError if no engine is available."""
+    try:
+        from weasyprint import HTML  # best fidelity — uses the exact report HTML/CSS
+        HTML(string=html_str).write_pdf(out_path)
+        return "weasyprint"
+    except ImportError:
+        pass
+    except Exception as e:  # weasyprint present but failed (e.g. missing system libs)
+        print(f"  weasyprint failed ({e}); falling back to reportlab", flush=True)
+
+    try:
+        _pdf_reportlab(d, out_path)
+        return "reportlab"
+    except ImportError:
+        raise RuntimeError(
+            "No PDF engine available (need weasyprint or reportlab). "
+            "Deliver the HTML report instead and open it in a browser → Print → Save as PDF."
+        )
+
+
+def _pdf_reportlab(d, out_path):
+    """Clean, print-friendly branded PDF built directly from the content (no HTML engine).
+    Light background for printing, with ChessAnalytics accent colors."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
+                                    TableStyle, ListFlowable, ListItem, HRFlowable)
+
+    t = L.get(d.get("lang", "en"), L["en"])
+    accent = colors.HexColor(C["accent"])
+    win = colors.HexColor(C["win"]); loss = colors.HexColor(C["loss"])
+    ink = colors.HexColor("#0a0b0e"); sub = colors.HexColor("#64748b")
+    line = colors.HexColor("#e2e8f0")
+
+    ss = getSampleStyleSheet()
+    h1 = ParagraphStyle("h1", parent=ss["Title"], fontSize=22, spaceAfter=2, textColor=ink)
+    brand = ParagraphStyle("brand", parent=ss["Normal"], fontSize=8, textColor=accent,
+                           spaceAfter=0, leading=10)
+    meta = ParagraphStyle("meta", parent=ss["Normal"], fontSize=9, textColor=sub, spaceAfter=8)
+    h2 = ParagraphStyle("h2", parent=ss["Heading2"], fontSize=12, textColor=ink,
+                        spaceBefore=10, spaceAfter=4)
+    body = ParagraphStyle("body", parent=ss["Normal"], fontSize=9.5, leading=14, textColor=ink)
+    foot = ParagraphStyle("foot", parent=ss["Normal"], fontSize=7, textColor=sub, alignment=1)
+
+    dr = d.get("dateRange") or {}
+    rng = f'{dr.get("from","")} – {dr.get("to","")}'.strip(" –")
+    story = [Paragraph("CHESSANALYTICS", brand),
+             Paragraph(esc(d.get("player", "—")), h1),
+             Paragraph(f'{esc(t["title"])}{(" · " + esc(rng)) if rng else ""}', meta),
+             HRFlowable(width="100%", thickness=1.5, color=accent, spaceAfter=8)]
+
+    # KPI table
+    s = d.get("summary") or {}
+    main_tc = s.get("mainTimeClass")
+    cur = (s.get("currentEloByTimeClass") or {}).get(main_tc) if main_tc else None
+    peak = (s.get("peakEloByTimeClass") or {}).get(main_tc) if main_tc else None
+    cells, vals = [], []
+    def add_kpi(label, value):
+        cells.append(Paragraph(f'<font size=7 color="#64748b">{esc(label)}</font>', body))
+        vals.append(Paragraph(f'<b>{esc(value)}</b>', ParagraphStyle("v", parent=body, fontSize=14)))
+    if "totalGames" in s: add_kpi(t["games"], s["totalGames"])
+    if "winRate" in s: add_kpi(t["winRate"], f'{s["winRate"]}%')
+    if cur is not None: add_kpi(f'{t["elo"]} ({main_tc})', cur)
+    if peak is not None: add_kpi(f'{t["peak"]} {t["elo"]}', peak)
+    if {"wins", "losses", "draws"} <= s.keys(): add_kpi("W–D–L", f'{s["wins"]}–{s["draws"]}–{s["losses"]}')
+    if cells:
+        kt = Table([cells, vals], colWidths=[ (170*mm)/len(cells) ]*len(cells))
+        kt.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f1f5f9")),
+                                ("BOX", (0, 0), (-1, -1), 0.5, line),
+                                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.white),
+                                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                                ("LEFTPADDING", (0, 0), (-1, -1), 8)]))
+        story += [kt, Spacer(1, 8)]
+
+    if d.get("headline"):
+        story.append(Paragraph(esc(d["headline"]), body))
+
+    # Print-friendly accent colors (the neon dark-theme palette is unreadable on white).
+    P_WIN, P_LOSS, P_ACCENT = "#0a8f5b", "#cc0000", "#0369a1"
+
+    def section(title, items, bullet="•", color_hex="#0a0b0e"):
+        if not items:
+            return
+        story.append(Paragraph(f'<font color="{color_hex}">{esc(title)}</font>', h2))
+        for x in items:
+            story.append(Paragraph(
+                f'<font color="{P_ACCENT}">{bullet}</font>&nbsp;&nbsp;{esc(x)}',
+                ParagraphStyle("li", parent=body, leftIndent=10, spaceAfter=2)))
+
+    section(t["strengths"], d.get("strengths"), color_hex=P_WIN)
+    section(t["weaknesses"], d.get("weaknesses"), color_hex=P_LOSS)
+    # "»" is WinAnsi-safe; "→" is not in reportlab's standard fonts.
+    section(t["recs"], d.get("recommendations"), bullet="»", color_hex=P_ACCENT)
+
+    def table(title, header, rows, widths):
+        if not rows:
+            return
+        story.append(Paragraph(esc(title), h2))
+        data_rows = [[Paragraph(f'<b>{esc(c)}</b>', ParagraphStyle("th", parent=body,
+                     fontSize=8, textColor=colors.white)) for c in header]]
+        data_rows += rows
+        tb = Table(data_rows, colWidths=widths, hAlign="LEFT")
+        tb.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), ink),
+                                ("GRID", (0, 0), (-1, -1), 0.5, line),
+                                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                                ("LEFTPADDING", (0, 0), (-1, -1), 6)]))
+        story += [tb, Spacer(1, 4)]
+
+    def cell(txt, color=None, align="LEFT"):
+        col = f' color="{color}"' if color else ""
+        st = ParagraphStyle("c", parent=body, fontSize=9, alignment={"LEFT": 0, "RIGHT": 2}[align])
+        return Paragraph(f'<font{col}>{esc(txt)}</font>', st)
+
+    cp = d.get("colorPerformance")
+    if cp:
+        rows = [[cell(t["white"] if c.get("color") == "white" else t["black"]),
+                 cell(f'{c.get("winRate",0)}%', align="RIGHT"),
+                 cell(c.get("total", ""), align="RIGHT")] for c in cp]
+        table(t["color"], [t["op"], t["winRate"], t["games"]], rows, [90*mm, 40*mm, 40*mm])
+
+    ad = d.get("accuracyDistribution")
+    if ad:
+        rows = [[cell(b.get("bucket", "")), cell(b.get("count", 0), align="RIGHT")] for b in ad]
+        table(t["accuracy"], ["", t["games"]], rows, [130*mm, 40*mm])
+
+    mt = d.get("monthlyTrend")
+    if mt:
+        rows = []
+        for m in mt:
+            wr = m.get("winRate", 0)
+            rows.append([cell(m.get("month", "")),
+                         cell(f'{wr}%', "#00aa66" if wr >= 50 else "#cc0000", "RIGHT"),
+                         cell(m.get("games", ""), align="RIGHT")])
+        table(t["monthly"], ["", t["winRate"], t["games"]], rows, [90*mm, 40*mm, 40*mm])
+
+    ops = d.get("topOpenings")
+    if ops:
+        rows = []
+        for o in ops:
+            net = o.get("netScore", 0)
+            ncol = "#00aa66" if net > 0 else "#cc0000" if net < 0 else "#64748b"
+            rows.append([cell(o.get("name", "")), cell(o.get("games", ""), align="RIGHT"),
+                         cell(f'{o.get("winRate","")}%', align="RIGHT"),
+                         cell(f'{"+" if net>0 else ""}{net}', ncol, "RIGHT")])
+        table(t["openings"], [t["op"], t["games"], t["winRate"], t["net"]],
+              rows, [95*mm, 25*mm, 25*mm, 25*mm])
+
+    gen = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    story += [Spacer(1, 10), HRFlowable(width="100%", thickness=0.5, color=line, spaceAfter=4),
+              Paragraph(f'{esc(t["generated"])}: {gen} · {esc(t["disclaimer"])}', foot)]
+
+    SimpleDocTemplate(out_path, pagesize=A4, topMargin=18*mm, bottomMargin=16*mm,
+                      leftMargin=20*mm, rightMargin=20*mm,
+                      title=f'{t["title"]} - {d.get("player","")}').build(story)
+
+
+def _strip_ext(path):
+    for ext in (".html", ".pdf", ".htm"):
+        if path.lower().endswith(ext):
+            return path[: -len(ext)]
+    return path
+
+
 def main():
-    p = argparse.ArgumentParser(description="Render a ChessAnalytics-styled HTML report.")
+    p = argparse.ArgumentParser(description="Render a ChessAnalytics-styled report (HTML/PDF).")
     p.add_argument("--input", required=True, help="report content JSON file")
-    p.add_argument("--output", default="report.html", help="output HTML path")
+    p.add_argument("--format", choices=["html", "pdf", "both"], default="html")
+    p.add_argument("--output", help="output path (extension set by --format)")
     args = p.parse_args()
 
     with open(args.input, encoding="utf-8") as f:
         data = json.load(f)
-    html_out = build(data)
-    with open(args.output, "w", encoding="utf-8") as f:
-        f.write(html_out)
-    print(f"wrote {args.output} ({len(html_out)} bytes)")
+    html_out = build_html(data)
+
+    if args.format in ("html", "both"):
+        out = args.output if (args.output and args.format == "html") else _strip_ext(args.output or "report") + ".html"
+        with open(out, "w", encoding="utf-8") as f:
+            f.write(html_out)
+        print(f"wrote {out} ({len(html_out)} bytes)")
+
+    if args.format in ("pdf", "both"):
+        out = args.output if (args.output and args.format == "pdf") else _strip_ext(args.output or "report") + ".pdf"
+        engine = write_pdf(data, html_out, out)
+        print(f"wrote {out} (engine: {engine})")
 
 
 if __name__ == "__main__":

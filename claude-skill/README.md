@@ -12,7 +12,7 @@ chess-analytics-coach/
 │   └── chesscom-api.md          # Chess.com endpoints + aggregation rules
 └── scripts/
     ├── analyze_chesscom.py      # aggregate games (web-fetch+--input, or direct fetch)
-    └── build_report.py          # render a styled HTML report (no network)
+    └── build_report.py          # render a styled report — HTML and/or PDF
 ```
 
 ## How it works
@@ -28,9 +28,9 @@ Two ways to get the data in (no copy-paste required for the first):
    pastes the text, the skill analyzes that directly — useful offline or when web-fetch is
    blocked.
 
-Then the skill replies with the analysis in the user's language, and can render an HTML
-report (`build_report.py`) styled like ChessAnalytics that the user can download and
-Print-to-PDF.
+Then the skill replies with the analysis in the user's language. Reports are **on demand**:
+it offers one but keeps chatting, and only renders it (HTML or PDF, via `build_report.py`)
+once you confirm the analysis is complete.
 
 > **Email:** sending email is not native to Claude.ai / Claude Desktop. If an email
 > connector or MCP server is configured (common in Claude Desktop), the skill offers to
