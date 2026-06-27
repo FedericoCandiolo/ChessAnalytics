@@ -9,7 +9,13 @@ chess-analytics-coach/
 ├── SKILL.md                     # entry point (instructions + routing)
 ├── reference/
 │   ├── export-schema.md         # the "Export for AI" JSON schema (paste path)
-│   └── chesscom-api.md          # Chess.com endpoints + aggregation rules
+│   ├── chesscom-api.md          # Chess.com endpoints + aggregation rules
+│   └── report-style.md          # brand style guide for composing reports
+├── assets/                      # bundled brand: Inter font (brand.css) + logo
+│   ├── brand.css                # @font-face Inter (embedded) + color tokens
+│   ├── logo-dark.txt            # logo data URI (dark header)
+│   ├── logo-light.txt           # logo data URI (light background)
+│   └── Inter-OFL.txt            # font license
 └── scripts/
     ├── analyze_chesscom.py      # aggregate games (web-fetch+--input, or direct fetch)
     └── build_report.py          # render a styled report — HTML and/or PDF
@@ -29,8 +35,10 @@ Two ways to get the data in (no copy-paste required for the first):
    blocked.
 
 Then the skill replies with the analysis in the user's language. Reports are **on demand**:
-it offers one but keeps chatting, and only renders it (HTML or PDF, via `build_report.py`)
-once you confirm the analysis is complete.
+it offers one but keeps chatting, and only builds it once you confirm. Reports follow the
+**brand style guide** (`reference/report-style.md`) — Claude composes each report (tailored
+to the conversation) using the bundled ChessAnalytics font + logo, or runs `build_report.py`
+for a fast consistent render. Both produce a self-contained HTML and/or PDF.
 
 > **Email:** sending email is not native to Claude.ai / Claude Desktop. If an email
 > connector or MCP server is configured (common in Claude Desktop), the skill offers to

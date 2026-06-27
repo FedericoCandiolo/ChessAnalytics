@@ -109,34 +109,28 @@ Instead:
 2. **Only build the report when the user clearly approves** the analysis is complete or
    explicitly asks for it (e.g. "make the report", "I'm done, export it", "give me the
    PDF"). If it's ambiguous, ask which format rather than assuming.
-3. **Always render via `scripts/build_report.py` — never hand-write the HTML.** The script
-   owns the ChessAnalytics layout and palette so every report looks identical. Your job is
-   only to assemble the content JSON; the script does the design.
-4. Assemble the conversation's findings into a JSON file (e.g. `report.json`). Full schema
-   is at the top of `scripts/build_report.py`; key points:
-   - `player`, `lang` (`es`/`en` — match the user), `dateRange`, optional `headline`.
-   - `summary`: totalGames, wins, losses, draws, winRate, mainTimeClass,
-     currentEloByTimeClass, peakEloByTimeClass.
-   - `topOpenings`: each with name, family, games, wins, losses, netScore, winRate.
-   - `colorPerformance`: white & black, each wins/draws/losses/total/winRate.
-   - `accuracyDistribution`, `weekdayPerformance`, `monthlyTrend`.
-   - `strengths`, `weaknesses`, `recommendations`: lists of `{"title","text"}` objects —
-     `title` = a short label, `text` = the explanation. (Plain strings also work but the
-     title/body cards look best.)
-   Reuse the numbers already discussed — do not recompute or invent. Omit any section you
-   don't have; the script renders only what's present.
-5. Render in the format they chose (runs in the no-network sandbox):
-   ```
-   python scripts/build_report.py --input report.json --format html   # styled HTML
-   python scripts/build_report.py --input report.json --format pdf    # PDF
-   python scripts/build_report.py --input report.json --format both   # both files
-   ```
-   - **HTML / PDF** share one design: dark ChessAnalytics header + KPIs, openings table,
-     color & accuracy panels, weekday grid, monthly trend, strengths/weaknesses cards,
-     numbered recommendations.
-   - PDF uses weasyprint if present (renders this exact HTML), else a simpler reportlab
-     fallback. If it reports no PDF engine, deliver the HTML and tell the user to open it
-     and **Print → Save as PDF**.
+3. **Follow the brand style guide — [reference/report-style.md](reference/report-style.md).**
+   For any chess-related report this is **mandatory**: it specifies the bundled
+   ChessAnalytics font (Inter) and logo to embed, the color tokens, the layout, and the
+   print/margin rules. You compose the report (guided improvisation — tailor the layout to
+   the conversation), but stay within those brand rules. **Only deviate from the brand look
+   if the user explicitly asks for something different and you've confirmed it first.**
+4. Two ways to produce it (both embed the same brand assets and print rules):
+   - **Compose the HTML yourself** (preferred for a tailored report): read
+     `assets/brand.css` and inline it; embed the logo from `assets/logo-dark.txt`; apply
+     the print rules from the style guide; render with weasyprint to PDF and also save the
+     HTML. Use the numbers already discussed — don't recompute or invent.
+   - **Run the script** for a fast, guaranteed-consistent output:
+     ```
+     python scripts/build_report.py --input report.json --format both
+     ```
+     (schema at the top of `build_report.py`; it embeds the same font/logo/margins).
+5. Key brand rules (full detail in the style guide):
+   - Embed **Inter** (from `assets/brand.css`) and the **logo** (`assets/logo-dark.txt`).
+   - Header is the **only** full-bleed element; **enforce page margins everywhere else**
+     (`@page { margin: 15mm }`) and `break-inside: avoid` on every chart/section so nothing
+     splits across pages.
+   - Win = green, draw = amber, loss = red; respond in the user's language.
 6. Give the user the resulting file(s) to download.
 
 ## Emailing the report

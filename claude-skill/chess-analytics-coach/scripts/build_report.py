@@ -48,7 +48,23 @@ Input JSON schema (everything except `player` is optional; sections render only 
 import argparse
 import html
 import json
+import os
 from datetime import datetime, timezone
+
+# Bundled brand assets (Inter font + logo). Embedded so output is self-contained.
+_ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets")
+
+
+def _asset(name):
+    try:
+        with open(os.path.join(_ASSET_DIR, name), encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+BRAND_CSS = _asset("brand.css")   # @font-face Inter (base64) + --ca-* color tokens
+LOGO_DARK = _asset("logo-dark.txt")  # data URI of the wordmark for dark headers
 
 # ── ChessAnalytics-aligned palette ──────────────────────────────────────────────
 # Dark header uses the app's exact tokens (neon on near-black). Light body uses
@@ -189,6 +205,7 @@ def build_html(d):
       <div class="header">
         <div class="header-top">
           <div>
+            {('<img class="ca-logo" src="' + LOGO_DARK + '" alt="ChessAnalytics">') if LOGO_DARK else ''}
             <div class="brand">{esc(t["brandLine"])}</div>
             <h1>{esc(t["analysisOf"])}<br><span>{esc(d.get("player","—"))}</span></h1>
           </div>
@@ -298,8 +315,8 @@ def build_html(d):
     return (f'<!doctype html><html lang="{lang}"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>{esc(t["title"])} · {esc(d.get("player",""))}</title>'
-            f'<style>{ROOT_VARS}{CSS}</style></head>'
-            f'<body><div class="sheet">{"".join(parts)}</div></body></html>')
+            f'<style>{BRAND_CSS}{ROOT_VARS}{CSS}</style></head>'
+            f'<body>{"".join(parts)}</body></html>')
 
 
 def _bucket_label(b):
@@ -385,14 +402,13 @@ ROOT_VARS = (
 CSS = """
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 /* Page margins so the document breathes; dark page edge matches the brand. */
-@page{size:A4;margin:1.3cm}
-html{background:var(--g100)}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  color:var(--g900);font-size:14px;line-height:1.5;background:var(--g100);padding:18px}
-.sheet{max-width:960px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;
-  border:1px solid var(--g100)}
+@page{size:A4;margin:15mm}
+html{background:#fff}
+body{font-family:'Inter',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--g900);font-size:14px;line-height:1.5;background:#fff;margin:0}
+.ca-logo{height:30px;width:auto;display:block;margin-bottom:14px}
 .header{background:linear-gradient(135deg,#0a0b0e 0%,#10212c 55%,#013a52 100%);
-  color:#fff;padding:44px 44px 34px}
+  color:#fff;padding:40px 44px 32px}
 .header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:30px}
 .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:6px}
 .header h1{font-size:36px;font-weight:700;line-height:1.1;color:#fff}
@@ -407,7 +423,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 .kpi-box .value.success{color:#00FF9C}
 .kpi-box .value.warn{color:#FFD400}
 .kpi-box .sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:5px}
-.content{padding:36px 44px}
+.content{max-width:960px;margin:0 auto;padding:36px 44px}
 .intro{background:var(--g50);border-left:3px solid var(--accent);border-radius:8px;
   padding:14px 18px;font-size:13px;color:var(--g700);line-height:1.6;margin-bottom:28px}
 .section-header{display:flex;align-items:center;gap:10px;margin:0 0 18px;padding-bottom:10px;
@@ -488,10 +504,13 @@ td.c,th.c{text-align:center}
 .footer-left{font-size:11px;color:var(--g500)}
 .footer-right{font-size:11px;color:var(--g300)}
 @media print{
-  body{padding:0;background:#fff}
-  .sheet{max-width:none;border:none;border-radius:0}
+  body{background:#fff}
+  /* Header is the only full-bleed element; negative margin = @page margin (15mm). */
+  .header{margin:-15mm -15mm 14mm -15mm}
+  .content{max-width:none;margin:0;padding:8px 0 0}
+  .footer{margin:0 -15mm}
   .section-header,.insight,.rec,.day-box,.color-block,.kpi-box,tr,.trend-row{break-inside:avoid}
-  table,.grid-2,.days-grid,.card{break-inside:avoid}
+  table,.grid-2,.days-grid,.card,.section{break-inside:avoid}
   h2,.section-header{break-after:avoid}
 }
 """
