@@ -8,6 +8,10 @@ different look **and** you've confirmed it with them first.
 You may render the report by composing HTML yourself (preferred — richer, tailored to the
 conversation) or by running `scripts/build_report.py`. Either way, the brand rules apply.
 
+**Output format: produce HTML by default. Only generate a PDF if the user explicitly asks
+for one** (e.g. "give me a PDF", "I need it as PDF"). The HTML report is the primary
+deliverable.
+
 ## 1. Bundled brand assets (always use them)
 
 The skill ships the real ChessAnalytics font and logo in `assets/`. Embed them so the
@@ -95,20 +99,54 @@ Notes:
 - If the full-bleed header doesn't bleed in your renderer, it degrades to a header that
   simply starts at the top margin — still fine.
 
-## 6. Rendering
+## 6. Rendering (HTML by default)
 
-Compose one HTML string with `brand.css` inlined and the logo embedded, then:
+The font and logo only appear if you **embed the asset files** — you cannot hand-type the
+42 KB base64. **The logo is an `<img>` with a data-URI `src`, never plain text.** The
+reliable way: write your HTML with the tokens `__BRAND_CSS__` and `__CA_LOGO__`, then
+replace them with the asset contents in Python (token-replace avoids f-string brace issues):
 
 ```python
-from weasyprint import HTML
-html = "...your report..."
-open("report.html", "w", encoding="utf-8").write(html)   # self-contained HTML deliverable
-HTML(string=html).write_pdf("report.pdf")                 # PDF
+import os
+A = os.path.join(os.path.dirname(__file__), "assets")   # or the skill's assets/ path
+
+TEMPLATE = """<!doctype html><html lang="es"><head><meta charset="utf-8">
+<style>
+__BRAND_CSS__
+@page { size:A4; margin:15mm; }
+body { font-family:'Inter',system-ui,sans-serif; margin:0; color:#1a1a1a; }
+.report-header { background:linear-gradient(135deg,#0a0b0e,#10212c 55%,#013a52);
+  color:#fff; padding:34px 44px; }
+.ca-logo { height:32px; width:auto; display:block; margin-bottom:12px; }
+.content { max-width:960px; margin:0 auto; padding:36px 44px; }
+@media print {
+  .report-header { margin:-15mm -15mm 16mm; }          /* full-bleed exception */
+  .content { max-width:none; padding:8px 0 0; }
+  .card,.insight,.rec,.kpi,.day-box,tr,table,.section { break-inside:avoid; }
+}
+</style></head>
+<body>
+  <div class="report-header">
+    <img class="ca-logo" src="__CA_LOGO__" alt="ChessAnalytics">
+    <!-- brand line, player name, KPI strip -->
+  </div>
+  <div class="content"><!-- your sections --></div>
+</body></html>"""
+
+html = (TEMPLATE
+        .replace("__BRAND_CSS__", open(os.path.join(A, "brand.css"), encoding="utf-8").read())
+        .replace("__CA_LOGO__",   open(os.path.join(A, "logo-dark.txt"), encoding="utf-8").read().strip()))
+
+open("report.html", "w", encoding="utf-8").write(html)   # ← the default deliverable
+
+# Only if the user explicitly asked for a PDF:
+# from weasyprint import HTML
+# HTML(string=html).write_pdf("report.pdf")
 ```
 
-weasyprint renders the embedded Inter + logo and honors the print rules above. Give the
-user the HTML and/or PDF as they requested. If weasyprint isn't available, deliver the HTML
-and tell them to open it and **Print → Save as PDF**.
+`__CA_LOGO__` embeds the wordmark image; `__BRAND_CSS__` embeds Inter. Always include the
+logo `<img>` in the header. If a PDF is requested and weasyprint isn't available, deliver
+the HTML and tell the user to open it and **Print → Save as PDF**.
 
 ## 7. Quick alternative
 
