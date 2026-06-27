@@ -126,10 +126,7 @@ Instead:
      ```
      (schema at the top of `build_report.py`; it embeds the same font/logo/margins).
 5. Key brand rules (full detail in the style guide):
-   - **Default to HTML.** Only produce a PDF if the user explicitly asks for one.
-   - **Embed the logo as an `<img>`** (data URI from `assets/logo-dark.txt`) — never render
-     the brand as plain text. Embed **Inter** from `assets/brand.css`. The reliable way is
-     the token-replace pattern in the style guide (you can't hand-type the base64).
+   - Embed **Inter** (from `assets/brand.css`) and the **logo** (`assets/logo-dark.txt`).
    - Header is the **only** full-bleed element; **enforce page margins everywhere else**
      (`@page { margin: 15mm }`) and `break-inside: avoid` on every chart/section so nothing
      splits across pages.
