@@ -71,19 +71,54 @@ function slimGame(g, userLower) {
   };
 }
 
+// ── URL-based username (clean paths like /fedecandiolo on GitHub Pages) ───────
+// Reads a username from: ?p=<name> (set by public/404.html on a direct hit),
+// the path (dev server / SPA), or the hash. Returns a sanitized username or null.
+function readUrlUsername() {
+  if (typeof window === 'undefined') return null;
+  try {
+    let u = new URLSearchParams(window.location.search).get('p');
+    if (!u && window.location.pathname.length > 1) u = window.location.pathname.slice(1).split('/')[0];
+    if (!u && window.location.hash.length > 1)     u = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+    if (!u) return null;
+    u = decodeURIComponent(u).trim().toLowerCase();
+    return /^[a-z0-9_-]{1,50}$/.test(u) ? u : null; // valid Chess.com username shape
+  } catch {
+    return null;
+  }
+}
+
 // ── Hook ─────────────────────────────────────────────────────────────────────
 export function useChessData() {
   const { i18n } = useTranslation();
 
-  const [username, setUsernameRaw] = useState(
-    () => localStorage.getItem('chess-analytics-username') || 'magnuscarlsen'
-  );
+  const [username, setUsernameRaw] = useState(() => {
+    // A username in the URL (e.g. /fedecandiolo) overrides localStorage on load.
+    const fromUrl = readUrlUsername();
+    if (fromUrl) {
+      localStorage.setItem('chess-analytics-username', fromUrl);
+      return fromUrl;
+    }
+    return localStorage.getItem('chess-analytics-username') || 'magnuscarlsen';
+  });
 
-  // Wrap setter to persist username in localStorage
+  // Wrap setter to persist username in localStorage + keep the URL shareable.
   const setUsername = useCallback((name) => {
     const trimmed = name.trim();
     localStorage.setItem('chess-analytics-username', trimmed);
     setUsernameRaw(trimmed);
+    if (typeof window !== 'undefined' && trimmed) {
+      try { window.history.replaceState(null, '', '/' + encodeURIComponent(trimmed.toLowerCase())); } catch {}
+    }
+  }, []);
+
+  // On load, normalize /?p=<name> (from the 404 redirect) to a clean /<name> URL.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const p = new URLSearchParams(window.location.search).get('p');
+    if (p) {
+      try { window.history.replaceState(null, '', '/' + encodeURIComponent(p.trim().toLowerCase())); } catch {}
+    }
   }, []);
 
   // false = recent (current + previous year only, default); true = full history
