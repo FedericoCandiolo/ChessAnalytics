@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ChessAnalytics</title>
+  <meta name="robots" content="noindex">
+  <script>
+    // SPA routing on GitHub Pages (no backend): a direct hit on /<username>
+    // returns this 404 page; redirect to /?p=<username> so index.html can boot
+    // and load that profile. The app then rewrites the bar back to /<username>.
+    (function () {
+      var l = window.location;
+      var seg = l.pathname.replace(/^\/+/, '').split('/')[0];
+      l.replace(l.origin + '/?p=' + encodeURIComponent(seg) + l.hash);
+    })();
+  </script>
+</head>
+<body></body>
+</html>
