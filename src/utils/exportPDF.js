@@ -61,11 +61,31 @@ async function svgToDataUrl(svgEl) {
   });
 }
 
+// D3 keeps a `__transition` property on nodes while a transition is scheduled
+// or running. Wait until none remain so we never capture a mid-animation frame
+// (e.g. the calendar's staggered fade-in, which left right-hand columns faded).
+async function waitForTransitions(svgEl, timeoutMs = 4000) {
+  const start = performance.now();
+  const busy = () => Array.from(svgEl.querySelectorAll('*')).some(n => n.__transition);
+  while (busy() && performance.now() - start < timeoutMs) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+  // One extra frame so the final attribute values are committed.
+  await new Promise(r => requestAnimationFrame(() => r()));
+}
+
 async function captureChart(type) {
   const card = document.querySelector(`[data-chart="${type}"]`);
   if (!card) return null;
-  const svg   = getChartSvg(card);
-  if (!svg)   return null;
+  let svg = getChartSvg(card);
+  if (!svg) return null;
+  await waitForTransitions(svg);
+  // A redraw (ResizeObserver) may have replaced the SVG while waiting.
+  if (!svg.isConnected) {
+    svg = getChartSvg(card);
+    if (!svg) return null;
+    await waitForTransitions(svg);
+  }
   const title = card.querySelector('h4')?.textContent?.trim() || '';
   const cap   = await svgToDataUrl(svg);
   return cap ? { ...cap, title } : null;
@@ -76,32 +96,21 @@ const WIN_COLOR  = [0, 255, 156];    // #00FF9C
 const DRAW_COLOR = [255, 243, 1];    // #FFF301
 const LOSS_COLOR = [255, 1, 1];      // #FF0101
 
-// ── Openings chart drawn natively (Pareto + Others, no SVG capture) ───────────
+// ── Openings chart drawn natively (Pareto bars + Others summary, no SVG capture) ───────────
 function drawOpeningsNative(pdf, rawData, cx, cy, cw, ch, t) {
   if (!rawData || !rawData.length) return;
 
-  // Compute Pareto openings + aggregate Others
+  // Pareto openings get a bar; everything else is summarised as text under
+  // the chart (an "Others" bar is often so large it dwarfs the real openings).
   const totalGames = rawData.reduce((s, d) => s + d.total, 0);
   const N = rawData.length;
   let cumGames = 0;
   const data = [];
-  let othersV = 0, othersT = 0, othersD = 0;
-
   rawData.forEach((d, i) => {
     cumGames += d.total;
-    const inPareto = ((i + 1) / N) + (cumGames / (totalGames || 1)) <= 1.0;
-    if (inPareto) {
-      data.push(d);
-    } else {
-      othersV += d.victoria;
-      othersT += d.tablas;
-      othersD += d.derrota;
-    }
+    if (((i + 1) / N) + (cumGames / (totalGames || 1)) <= 1.0) data.push(d);
   });
-  const othersTotal = othersV + othersT + othersD;
-  if (othersTotal > 0) {
-    data.push({ name: t('charts.others'), victoria: othersV, tablas: othersT, derrota: othersD, total: othersTotal });
-  }
+  if (!data.length) data.push(rawData[0]);
 
   const TITLE_H  = 4.5;
   const LEGEND_H = 5;
@@ -120,36 +129,63 @@ function drawOpeningsNative(pdf, rawData, cx, cy, cw, ch, t) {
 
   const chartH   = ch - TITLE_H - LEGEND_H;
   const barAreaW = cw - ML - MR;
+
+  // Guarantee a minimum row pitch so labels/bars never overlap: rows that
+  // don't fit are summarised with the rest.
+  const MIN_PITCH = 3.4;
+  const maxRows   = Math.max(1, Math.floor(chartH / MIN_PITCH));
+  if (data.length > maxRows) data.length = maxRows;
+
+  const shown  = new Set(data);
+  const others = rawData.filter(d => !shown.has(d)).reduce((a, d) => ({
+    count: a.count + 1,
+    victoria: a.victoria + d.victoria, tablas: a.tablas + d.tablas,
+    derrota: a.derrota + d.derrota, total: a.total + d.total,
+  }), { count: 0, victoria: 0, tablas: 0, derrota: 0, total: 0 });
+
   const n        = data.length;
-  const barH     = Math.min(6, (chartH - 2) / n);
-  const padding  = (chartH - n * barH) / (n + 1);
+  const pitch    = chartH / n;
+  const barH     = Math.min(3.6, pitch * 0.62);
+  const radius   = barH / 2;
+  const LABEL_PT = 4.2;
+  const labelMM  = LABEL_PT * 0.3528;
   const maxVal   = Math.max(...data.map(d => d.total));
   const scaleX   = (v) => (v / (maxVal || 1)) * barAreaW;
 
   data.forEach((d, i) => {
-    const barY = cy + TITLE_H + padding + i * (barH + padding);
+    const barY = cy + TITLE_H + i * pitch + (pitch - barH) / 2;
     const barX = cx + ML;
+    const textY = barY + barH / 2 + labelMM * 0.35;
 
     // Opening name (right-aligned, truncated)
     const name = d.name.length > 21 ? d.name.slice(0, 20) + '…' : d.name;
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(4.2);
+    pdf.setFontSize(LABEL_PT);
     pdf.setTextColor(...TEXT2);
-    pdf.text(name, cx + ML - 1, barY + barH * 0.72, { align: 'right', maxWidth: ML - 1 });
+    pdf.text(name, cx + ML - 1, textY, { align: 'right' });
 
-    // Stacked bars
+    // Stacked bars, clipped to a rounded pill
     const winW  = scaleX(d.victoria);
     const drawW = scaleX(d.tablas);
     const lossW = scaleX(d.derrota);
+    const totW  = winW + drawW + lossW;
 
-    if (winW  > 0.1) { pdf.setFillColor(...WIN_COLOR);  pdf.rect(barX,                  barY, winW,  barH, 'F'); }
-    if (drawW > 0.1) { pdf.setFillColor(...DRAW_COLOR); pdf.rect(barX + winW,            barY, drawW, barH, 'F'); }
-    if (lossW > 0.1) { pdf.setFillColor(...LOSS_COLOR); pdf.rect(barX + winW + drawW,    barY, lossW, barH, 'F'); }
+    if (totW > 0.1) {
+      const r = Math.min(radius, totW / 2);
+      pdf.saveGraphicsState();
+      pdf.roundedRect(barX, barY, totW, barH, r, r, null);
+      pdf.clip();
+      pdf.discardPath();
+      if (winW  > 0) { pdf.setFillColor(...WIN_COLOR);  pdf.rect(barX,               barY, winW,  barH, 'F'); }
+      if (drawW > 0) { pdf.setFillColor(...DRAW_COLOR); pdf.rect(barX + winW,        barY, drawW, barH, 'F'); }
+      if (lossW > 0) { pdf.setFillColor(...LOSS_COLOR); pdf.rect(barX + winW + drawW, barY, lossW, barH, 'F'); }
+      pdf.restoreGraphicsState();
+    }
 
     // Total count label
     pdf.setFontSize(3.8);
     pdf.setTextColor(...TEXT2);
-    pdf.text(String(d.total), barX + winW + drawW + lossW + 1, barY + barH * 0.72);
+    pdf.text(String(d.total), barX + totW + 1, textY);
   });
 
   // Legend
@@ -161,12 +197,35 @@ function drawOpeningsNative(pdf, rawData, cx, cy, cw, ch, t) {
   ].forEach((item, i) => {
     const lx = cx + ML + i * 22;
     pdf.setFillColor(...item.color);
-    pdf.rect(lx, legY - 2.5, 4, 2.5, 'F');
+    pdf.roundedRect(lx, legY - 2.5, 4, 2.5, 0.8, 0.8, 'F');
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(4.2);
     pdf.setTextColor(...TEXT2);
     pdf.text(item.label, lx + 5, legY);
   });
+
+  // Others summary (right-aligned on the legend row, counts in result colors)
+  if (others.total > 0) {
+    const parts = [
+      { text: `${t('charts.others')} (${others.count}) — ${t('charts.gamesLabel')}: `, color: TEXT1 },
+      { text: String(others.total), color: TEXT1 },
+      { text: `  ·  ${t('results.wins')}: `, color: TEXT2 },
+      { text: String(others.victoria), color: WIN_COLOR },
+      { text: `  ·  ${t('results.drawsLabel')}: `, color: TEXT2 },
+      { text: String(others.tablas), color: DRAW_COLOR },
+      { text: `  ·  ${t('results.losses')}: `, color: TEXT2 },
+      { text: String(others.derrota), color: LOSS_COLOR },
+    ];
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(4.2);
+    const totalW = parts.reduce((w, p) => w + pdf.getTextWidth(p.text), 0);
+    let x = cx + cw - 2 - totalW;
+    parts.forEach(p => {
+      pdf.setTextColor(...p.color);
+      pdf.text(p.text, x, legY);
+      x += pdf.getTextWidth(p.text);
+    });
+  }
 }
 
 // ── Draw a chart into a PDF cell, preserving aspect ratio (letterbox) ─────────
